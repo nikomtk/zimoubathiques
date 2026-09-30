@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mon cartable – Maths 5e</title>
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF9800">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Maths 5e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+:root{
+  --papier:#FDFDFB; --grille:#DDE7F3;
+  --encre:#1D3C8F; --rouge:#D4262C; --vert:#2E7D32;
+  --cartable:#FF9800; --cuir:#A0522D; --fermoir:#FFD200; --trait:#2A1F17;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; min-height:100vh;
+  font-family:'Lexend',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:17px; line-height:1.45; color:var(--trait);
+  background-color:var(--papier);
+  background-image:linear-gradient(var(--grille) 1px,transparent 1px),linear-gradient(90deg,var(--grille) 1px,transparent 1px);
+  background-size:22px 22px;
+}
+.page{max-width:620px;margin:0 auto;padding:14px 16px 48px}
+.hand{font-family:'Patrick Hand','Comic Sans MS',cursive}
+h1,h2,h3{margin:0;line-height:1.2}
+h2{font-size:1.15rem;margin:26px 0 10px}
+p{margin:.4em 0}
+.muted{color:#6B5E54;font-size:.92rem}
+
+/* en-tête */
+.top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.top img{width:46px;height:46px}
+.top h1{font-size:1.25rem;flex:1}
+.chip{border:2px solid var(--trait);border-radius:999px;padding:4px 12px;background:#fff;font-weight:600;font-size:.9rem;white-space:nowrap}
+.chip.late{background:var(--rouge);color:#fff}
+
+/* cartes et boutons, style "autocollant" comme l'icône */
+.card{background:#fff;border:3px solid var(--trait);border-radius:18px;padding:18px;box-shadow:0 5px 0 var(--trait);margin-bottom:16px}
+.btn{
+  font:inherit;font-weight:600;font-size:1.08rem;color:var(--trait);
+  display:block;width:100%;padding:14px 16px;margin-top:10px;
+  background:var(--cartable);border:3px solid var(--trait);border-radius:14px;
+  box-shadow:0 4px 0 var(--trait);cursor:pointer;text-align:center;
+}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--trait)}
+.btn.sec{background:#fff}
+.btn.cuir{background:var(--cuir);color:#fff}
+.btn.jaune{background:var(--fermoir)}
+.btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:0 4px 0 var(--trait)}
+.lien{font:inherit;background:none;border:none;color:var(--encre);text-decoration:underline;cursor:pointer;padding:6px}
+:focus-visible{outline:3px solid var(--encre);outline-offset:3px}
+
+/* tirelire */
+.tirelire{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:center}
+.jar{width:110px;height:auto}
+.montant{font-size:3.2rem;color:var(--encre);line-height:1}
+.barre{height:12px;border:2px solid var(--trait);border-radius:99px;background:#fff;overflow:hidden;margin:8px 0 4px}
+.barre>span{display:block;height:100%;background:var(--fermoir)}
+
+/* bandeau virement */
+.alerte{background:var(--fermoir)}
+
+/* thèmes */
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tuile{
+  font:inherit;text-align:left;color:var(--trait);cursor:pointer;
+  background:#fff;border:3px solid var(--trait);border-radius:14px;padding:12px;
+  box-shadow:0 3px 0 var(--trait);min-height:88px;display:flex;flex-direction:column;justify-content:space-between;gap:6px;
+}
+.tuile b{font-size:.98rem}
+.tuile small{color:#6B5E54}
+.tuile.sug{background:#FFF3DC}
+.tuile.lock{border-style:dashed;box-shadow:none;background:transparent;cursor:default;color:#8B7F76}
+
+/* rappel */
+.etapes{display:flex;gap:6px;margin-bottom:12px}
+.etapes span{flex:1;height:8px;border-radius:9px;background:#E5DED6;border:1.5px solid var(--trait)}
+.etapes span.ok{background:var(--cartable)}
+.lecon{font-size:1.1rem}
+.choix{display:grid;gap:10px;margin-top:14px}
+.choix .btn{margin:0;background:#fff}
+.choix .btn.faux{background:#FDE3E3;border-color:var(--rouge);color:var(--rouge);box-shadow:0 4px 0 var(--rouge)}
+.choix .btn.juste{background:#DFF3E1;border-color:var(--vert);color:var(--vert);box-shadow:0 4px 0 var(--vert)}
+
+/* questions */
+.progres{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:14px}
+.progres span{aspect-ratio:1;border:2px solid var(--trait);border-radius:5px;background:#fff}
+.progres span.j{background:var(--encre)}
+.progres span.f{background:var(--rouge)}
+.progres span.c{background:var(--fermoir)}
+.enonce{font-size:1.3rem;font-weight:600;line-height:1.5}
+.saisie{
+  margin-top:16px;min-height:66px;border:3px solid var(--trait);border-radius:12px;background:#fff;
+  font-size:2.3rem;color:var(--encre);padding:4px 14px;display:flex;align-items:center;
+}
+.saisie .curseur{display:inline-block;width:3px;height:1.1em;background:var(--encre);margin-left:3px;animation:clig 1s steps(1) infinite}
+@keyframes clig{50%{opacity:0}}
+.pave{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.pave button{
+  font:inherit;font-size:1.45rem;font-weight:600;padding:12px 0;color:var(--trait);
+  background:#fff;border:3px solid var(--trait);border-radius:12px;box-shadow:0 3px 0 var(--trait);cursor:pointer;
+}
+.pave button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--trait)}
+.pave button:disabled{opacity:.3}
+.pave .ok{grid-column:span 2;background:var(--cartable);font-size:1.15rem}
+.retour{margin-top:14px;padding:12px 14px;border-radius:12px;border:3px solid}
+.retour.j{border-color:var(--vert);background:#EEF8EF}
+.retour.f{border-color:var(--rouge);background:#FFF1F1}
+.retour .hand{font-size:1.6rem}
+.retour.j .hand{color:var(--vert)}
+.retour.f .hand{color:var(--rouge)}
+
+/* fractions écrites en colonne */
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 3px;font-size:.92em;line-height:1.1}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 4px}
+.fr>span:last-child{padding:0 4px}
+
+/* tableau */
+table.t{border-collapse:collapse;margin:10px 0;font-size:1.05rem}
+table.t td{border:2px solid var(--trait);padding:6px 12px;text-align:center;background:#fff}
+
+/* résultat */
+.note{
+  display:inline-block;font-size:3.6rem;color:var(--rouge);line-height:1;
+  border:4px solid var(--rouge);border-radius:50%;padding:22px 20px;transform:rotate(-7deg);margin:6px 0 10px;
+}
+.centre{text-align:center}
+.piece{
+  display:inline-block;width:44px;height:44px;border-radius:50%;background:var(--fermoir);border:3px solid var(--trait);
+  font-weight:700;line-height:38px;animation:tombe .9s cubic-bezier(.3,1.6,.5,1) both;
+}
+@keyframes tombe{from{transform:translateY(-70px) rotate(-90deg);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.piece,.saisie .curseur{animation:none}}
+details summary{cursor:pointer;font-weight:600;margin-top:10px}
+.erreur{border-top:2px dashed #D8CFC6;padding:8px 0}
+
+/* parent */
+.ligne{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:2px dashed #E3DBD2;align-items:center;flex-wrap:wrap}
+.ligne:last-child{border-bottom:none}
+.statut{font-size:.85rem;font-weight:600;border-radius:99px;padding:2px 10px;border:2px solid var(--trait)}
+.statut.a_verser{background:var(--fermoir)}
+.statut.recu{background:#DFF3E1}
+.statut.en_cours{background:#fff}
+.statut.rien{background:#EEE}
+input.champ{font:inherit;font-size:1.3rem;padding:10px 12px;border:3px solid var(--trait);border-radius:12px;width:100%;margin-top:8px;background:#fff;color:var(--trait)}
+.bascule{display:flex;align-items:center;gap:10px;margin-top:10px}
+.bascule input{width:22px;height:22px}
+.petits{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.petits .btn{font-size:.95rem;padding:10px}
+</style>
+</head>
+<body>
+<main class="page" id="app"><p class="hand" style="font-size:1.6rem;margin-top:40px">Ouverture du cartable…</p></main>
+
+<script>
+/* =====================================================================
+   RÉGLAGES — c'est la seule partie à modifier (voir le guide)
+   ===================================================================== */
+const CONFIG = {
+  prenom: "Benjamin",
+  dureeSeanceMin: 20,          // temps maximum par jour
+  questionsParExercice: 10,
+  exosNotesParJour: 2,         // les 2 premiers exercices du jour comptent pour la tirelire
+  joursNotesParSemaine: 4,     // 4 jours "payés" par semaine
+  plafondSemaine: 20,          // en euros
+  bareme: { 7: 0.60, 8: 1.20, 9: 1.80, 10: 2.50 },   // gain par exercice selon la note sur 10
+
+  // Synchronisation entre appareils (Supabase). Laisser vide = enregistré sur l'appareil seulement.
+  supabase: { url: "", cle: "", table: "tirelire", eleveId: "benjamin" },
+
+  // Mail hebdomadaire (EmailJS). Laisser vide = pas de mail.
+  emailjs: { publicKey: "", serviceId: "", templateId: "" }
+};
+
+/* =====================================================================
+   OUTILS
+   ===================================================================== */
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b];}return a;};
+const nz=(a,b)=>{let x;do{x=rnd(a,b);}while(x===0);return x;};
+const fr=n=>{const r=Math.round(n*1000)/1000;return String(r).replace('.',',').replace('-','−');};
+const relS=n=>n<0?`(−${Math.abs(n)})`:`(+${n})`;
+const euro=n=>(Math.round(n*100)/100).toFixed(2).replace('.',',')+' €';
+const F=(n,d)=>`<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+
+// Types de questions
+const num=(q,answer,explain='')=>({type:'num',q,answer,explain});
+const frac=(q,n,d,explain='',irr=false)=>({type:'frac',q,n,d,irr,explain});
+const qcm=(q,choices,explain='')=>({type:'qcm',q,choices:shuffle(choices),answer:choices[0],explain}); // 1er choix = bonne réponse
+const chk=(q,check,sample,explain='')=>({type:'chk',q,check,sample,explain});
+
+/* =====================================================================
+   PROGRAMME DE 5e
+   mois : 0 = septembre, 1 = octobre … 9 = juin (déblocage progressif)
+   rappel : [texte, question, [bonne réponse, autres…], aide]
+   ===================================================================== */
+const THEMES = [
+{ id:'decimaux', titre:'Révisions : nombres décimaux', mois:0,
+  rappel:[
+    ["Pour comparer deux décimaux, on compare la partie entière, puis les dixièmes, puis les centièmes. Astuce : ajoute des zéros pour avoir autant de chiffres, 2,5 = 2,50.","Lequel est le plus grand ?",["2,5","2,45"],"2,5 = 2,50, et 50 centièmes, c'est plus que 45 centièmes."],
+    ["Multiplier par 10, 100 ou 1 000 décale la virgule de 1, 2 ou 3 rangs vers la droite. Diviser la décale vers la gauche.","3,7 × 100 = ?",["370","37","0,037"],"Deux rangs vers la droite : 3,7 → 37 → 370."],
+    ["Arrondir à l'unité : on regarde le chiffre des dixièmes. S'il vaut 5 ou plus, on arrondit au-dessus.","Arrondi de 12,6 à l'unité ?",["13","12"],"Le chiffre des dixièmes est 6, donc on monte à 13."]
+  ],
+  gens:[
+    ()=>{const a=rnd(11,99)/10,b=rnd(11,99)/10;return num(`${fr(a)} + ${fr(b)} = ?`,Math.round((a+b)*10)/10);},
+    ()=>{const x=rnd(101,999)/100,k=pick([10,100,1000]);return num(`${fr(x)} × ${k} = ?`,Math.round(x*k*100)/100,`La virgule se décale de ${String(k).length-1} rang(s) vers la droite.`);},
+    ()=>{const x=rnd(11,999),k=pick([10,100]);return num(`${x} ÷ ${k} = ?`,x/k,`La virgule se décale de ${String(k).length-1} rang(s) vers la gauche.`);},
+    ()=>{let a,b;do{a=rnd(1,9)+rnd(1,9)/10;b=Math.floor(a)+rnd(10,99)/100;}while(Math.abs(a-b)<1e-9);a=Math.round(a*10)/10;return qcm('Quel est le plus grand nombre ?',[fr(Math.max(a,b)),fr(Math.min(a,b))],'Compare chiffre par chiffre : dixièmes, puis centièmes.');},
+    ()=>{const x=rnd(1000,9999)/100;return num(`Arrondis ${fr(x)} à l'unité.`,Math.round(x),'On regarde le chiffre des dixièmes.');},
+    ()=>{const a=rnd(2,9),b=rnd(2,9);return num(`${fr(a/10)} × ${b} = ?`,a*b/10,`${a} × ${b} = ${a*b} dixièmes, soit ${fr(a*b/10)}.`);}
+  ]},
+{ id:'relatifs', titre:'Nombres relatifs', mois:0,
+  rappel:[
+    ["Un nombre relatif a un signe : positif (+) ou négatif (−). Sur une droite graduée, plus on va à gauche, plus il est petit. Donc −8 < −2.","Lequel est le plus petit ?",["−8","−2"],"−8 est plus à gauche que −2 sur la droite graduée."],
+    ["Addition : même signe → on additionne les distances à zéro et on garde le signe. Signes différents → on soustrait et on garde le signe du plus éloigné de zéro.","(−5) + (+3) = ?",["−2","+2","−8"],"5 − 3 = 2, et c'est −5 le plus éloigné de zéro : −2."],
+    ["Soustraire un nombre, c'est ajouter son opposé : (+4) − (−6) = (+4) + (+6) = +10.","(+2) − (−3) = ?",["+5","−1","+1"],"On ajoute l'opposé de −3, c'est +3 : 2 + 3 = 5."]
+  ],
+  gens:[
+    ()=>{const a=nz(-15,15),b=nz(-15,15);return num(`${relS(a)} + ${relS(b)} = ?`,a+b);},
+    ()=>{const a=nz(-15,15),b=nz(-15,15);return num(`${relS(a)} − ${relS(b)} = ?`,a-b,`Soustraire ${relS(b)}, c'est ajouter ${relS(-b)}.`);},
+    ()=>{let a,b;do{a=rnd(-20,20);b=rnd(-20,20);}while(a===b);return qcm('Quel est le plus petit nombre ?',[fr(Math.min(a,b)),fr(Math.max(a,b))],'Le plus petit est le plus à gauche sur la droite graduée.');},
+    ()=>{const t=rnd(-8,5),d=rnd(3,12);return num(`Le matin, il fait ${fr(t)} °C. Dans la journée, la température monte de ${d} °C. Quelle température fait-il ?`,t+d);},
+    ()=>{const a=nz(-20,20);return num(`Quel est l'opposé de ${fr(a)} ?`,-a,"L'opposé a la même distance à zéro, avec le signe contraire.");},
+    ()=>{const a=rnd(-9,-1),b=rnd(1,9);return num(`Sur une droite graduée, A a pour abscisse ${fr(a)} et B a pour abscisse ${b}. Quelle est la distance AB ?`,b-a,`${b} − (${fr(a)}) = ${b-a}`);}
+  ]},
+{ id:'priorites', titre:'Priorités opératoires', mois:0,
+  rappel:[
+    ["Ordre des calculs : d'abord les parenthèses, puis les multiplications et divisions, enfin les additions et soustractions.","Dans 4 + 3 × 2, on commence par…",["3 × 2","4 + 3"],"La multiplication passe avant l'addition."],
+    ["Exemple : 4 + 3 × 2 = 4 + 6 = 10, et pas 14 !","5 + 2 × 4 = ?",["13","28"],"2 × 4 = 8, puis 5 + 8 = 13."],
+    ["Les parenthèses passent avant tout. Avec seulement des + et des −, on calcule de gauche à droite : 10 − 4 + 2 = 8.","(3 + 2) × 4 = ?",["20","11"],"Parenthèses d'abord : 5 × 4 = 20."]
+  ],
+  gens:[
+    ()=>{const a=rnd(2,20),b=rnd(2,9),c=rnd(2,9);return num(`${a} + ${b} × ${c} = ?`,a+b*c,`${b} × ${c} = ${b*c}, puis ${a} + ${b*c}.`);},
+    ()=>{const a=rnd(2,9),b=rnd(2,9),c=rnd(2,9);return num(`(${a} + ${b}) × ${c} = ?`,(a+b)*c,`Parenthèses d'abord : ${a+b} × ${c}.`);},
+    ()=>{const a=rnd(46,90),b=rnd(2,9),c=rnd(2,5);return num(`${a} − ${b} × ${c} = ?`,a-b*c,`${b} × ${c} = ${b*c}, puis ${a} − ${b*c}.`);},
+    ()=>{const c=rnd(2,9),q=rnd(2,9),a=rnd(1,20);return num(`${a} + ${c*q} ÷ ${c} = ?`,a+q,`${c*q} ÷ ${c} = ${q}, puis ${a} + ${q}.`);},
+    ()=>{let a=rnd(2,9),b=rnd(2,9),c=rnd(2,9),d=rnd(2,9);if(a*b<c*d){[a,b,c,d]=[c,d,a,b];}return num(`${a} × ${b} − ${c} × ${d} = ?`,a*b-c*d,`${a*b} − ${c*d}`);},
+    ()=>{const a=rnd(20,40),b=rnd(2,10),c=rnd(2,10);return num(`${a} − ${b} + ${c} = ?`,a-b+c,'De gauche à droite.');},
+    ()=>{const a=rnd(2,9),b=rnd(2,9),c=rnd(2,9);return qcm(`Dans ${a} + ${b} × ${c}, quel calcul fait-on en premier ?`,[`${b} × ${c}`,`${a} + ${b}`]);}
+  ]},
+{ id:'angles', titre:'Angles et triangles', mois:1,
+  rappel:[
+    ["Dans un triangle, la somme des trois angles vaut toujours 180°.","Deux angles font 50° et 70°. Le troisième ?",["60°","80°","120°"],"180 − 50 − 70 = 60."],
+    ["Triangle isocèle : les deux angles à la base sont égaux. Triangle équilatéral : trois angles de 60°.","Isocèle, angles à la base de 40°. L'angle au sommet ?",["100°","40°","140°"],"180 − 40 − 40 = 100."],
+    ["Inégalité triangulaire : on peut construire le triangle si le plus grand côté est plus petit que la somme des deux autres.","3 cm, 4 cm et 10 cm : constructible ?",["Non","Oui"],"3 + 4 = 7, c'est moins que 10 : les côtés ne se rejoignent pas."]
+  ],
+  gens:[
+    ()=>{const a=rnd(25,85),b=rnd(25,150-a);return num(`Dans un triangle, deux angles mesurent ${a}° et ${b}°. Combien mesure le troisième (en °) ?`,180-a-b,`180 − ${a} − ${b}`);},
+    ()=>{const s=2*rnd(10,70);return num(`Un triangle isocèle a un angle au sommet de ${s}°. Combien mesure chacun des deux autres angles (en °) ?`,(180-s)/2,`(180 − ${s}) ÷ 2`);},
+    ()=>{const x=rnd(20,85);return num(`Dans un triangle isocèle, les deux angles à la base mesurent ${x}°. Combien mesure le troisième angle (en °) ?`,180-2*x,`180 − ${x} − ${x}`);},
+    ()=>{const a=rnd(3,10),b=rnd(3,10);const ok=Math.random()<.5;const c=ok?rnd(Math.abs(a-b)+1,a+b-1):a+b+rnd(1,5);return qcm(`Peut-on construire un triangle de côtés ${a} cm, ${b} cm et ${c} cm ?`,ok?['Oui','Non']:['Non','Oui'],'Le plus grand côté doit être plus petit que la somme des deux autres.');},
+    ()=>{const x=rnd(20,160);return num(`Deux angles sont supplémentaires (leur somme fait 180°). L'un mesure ${x}°. Combien mesure l'autre (en °) ?`,180-x);},
+    ()=>{const x=rnd(30,150);return num(`Deux droites parallèles sont coupées par une sécante. Un angle mesure ${x}°. Combien mesure l'angle alterne-interne associé (en °) ?`,x,'Avec des parallèles, les angles alternes-internes sont égaux.');},
+    ()=>qcm("Combien mesure chaque angle d'un triangle équilatéral ?",['60°','90°','45°','180°'],'180 ÷ 3 = 60.')
+  ]},
+{ id:'fractions', titre:'Fractions', mois:2,
+  rappel:[
+    ["On ne change pas une fraction en multipliant (ou en divisant) le numérateur et le dénominateur par le même nombre : 2/3 = 4/6 = 6/9.","3/4 = ?/8",["6","7","3"],"4 × 2 = 8, donc 3 × 2 = 6."],
+    ["Pour additionner des fractions, il faut le même dénominateur. On additionne alors les numérateurs : 2/7 + 3/7 = 5/7. Pour écrire une fraction, tape par exemple 5/7.","1/5 + 2/5 = ?",["3/5","3/10"],"On garde le dénominateur 5 et on additionne 1 + 2."],
+    ["Prendre une fraction d'une quantité : 3/4 de 20 = 20 ÷ 4 × 3 = 15.","2/3 de 12 = ?",["8","6","4"],"12 ÷ 3 = 4, puis 4 × 2 = 8."]
+  ],
+  gens:[
+    ()=>{const d=rnd(2,9),n=rnd(1,d-1),k=rnd(2,6);return num(`${F(n,d)} = ${F('?',d*k)}  Quel est le nombre manquant ?`,n*k,`${d} × ${k} = ${d*k}, donc ${n} × ${k} = ${n*k}.`);},
+    ()=>{let d,n;do{d=rnd(2,9);n=rnd(1,d-1);}while(gcd(n,d)!==1);const k=rnd(2,6);return frac(`Simplifie au maximum ${F(n*k,d*k)}  (écris par exemple 2/3)`,n,d,`On divise en haut et en bas par ${k}.`,true);},
+    ()=>{const d=rnd(3,12),a=rnd(1,d-1),b=rnd(1,d-1);return frac(`${F(a,d)} + ${F(b,d)} = ?`,a+b,d,'On garde le dénominateur et on additionne les numérateurs.');},
+    ()=>{const d=rnd(2,6),a=rnd(1,d),b=rnd(1,2*d);return frac(`${F(a,d)} + ${F(b,2*d)} = ?`,2*a+b,2*d,`${F(a,d)} = ${F(2*a,2*d)}, puis on additionne.`);},
+    ()=>{const d=pick([2,3,4,5,10]),n=rnd(1,d-1),q=d*rnd(2,12);return num(`Combien font ${F(n,d)} de ${q} ?`,n*q/d,`${q} ÷ ${d} = ${q/d}, puis × ${n}.`);},
+    ()=>{let d=rnd(2,9),n;do{n=rnd(1,2*d);}while(n===d);return qcm(`${F(n,d)} est-il plus grand ou plus petit que 1 ?`,n>d?['Plus grand que 1','Plus petit que 1']:['Plus petit que 1','Plus grand que 1'],'Si le numérateur est plus grand que le dénominateur, la fraction dépasse 1.');},
+    ()=>{const d=rnd(3,12),a=rnd(2,d+5),b=rnd(1,a-1);return frac(`${F(a,d)} − ${F(b,d)} = ?`,a-b,d,'On garde le dénominateur et on soustrait les numérateurs.');}
+  ]},
+{ id:'divisibilite', titre:'Multiples, diviseurs, nombres premiers', mois:3,
+  rappel:[
+    ["Divisible par 2 si le nombre finit par 0, 2, 4, 6 ou 8. Par 5 s'il finit par 0 ou 5. Par 10 s'il finit par 0.","Lequel est divisible par 5 ?",["135","132","128"],"135 finit par 5."],
+    ["Divisible par 3 (ou par 9) si la somme de ses chiffres est divisible par 3 (ou par 9). 471 → 4 + 7 + 1 = 12, divisible par 3.","252 est-il divisible par 9 ?",["Oui","Non"],"2 + 5 + 2 = 9."],
+    ["Un nombre premier a exactement deux diviseurs : 1 et lui-même. 2, 3, 5, 7, 11, 13… sont premiers. 1 n'est pas premier.","Lequel est premier ?",["13","15","21"],"13 ne se divise que par 1 et par 13."]
+  ],
+  gens:[
+    ()=>{const k=pick([2,3,5,9,10]);let n;if(Math.random()<.5){n=k*rnd(12,99);}else{do{n=rnd(100,999);}while(n%k===0);}return qcm(`${n} est-il divisible par ${k} ?`,n%k===0?['Oui','Non']:['Non','Oui'],'Pense au critère de divisibilité.');},
+    ()=>{const p=pick([2,3,5,7,11,13,17,19,23,29,31,37,41,43,47]);const c=shuffle([4,6,8,9,10,12,14,15,21,25,27,33,35,39,49,51]).slice(0,3);return qcm('Lequel de ces nombres est premier ?',[String(p),...c.map(String)],`${p} n'a que deux diviseurs : 1 et ${p}.`);},
+    ()=>{const b=rnd(3,9),q=rnd(5,20),r=rnd(1,b-1);return num(`Quel est le reste de la division euclidienne de ${b*q+r} par ${b} ?`,r,`${b*q+r} = ${b} × ${q} + ${r}`);},
+    ()=>{const b=rnd(3,9),q=rnd(5,20),r=rnd(0,b-1);return num(`Quel est le quotient de la division euclidienne de ${b*q+r} par ${b} ?`,q,`${b*q+r} = ${b} × ${q} + ${r}`);},
+    ()=>{const k=rnd(3,9),m=rnd(30,90);return num(`Quel est le plus petit multiple de ${k} strictement plus grand que ${m} ?`,(Math.floor(m/k)+1)*k);},
+    ()=>{const n=pick([12,18,20,24,28,30,36,40,42,45,48,50,60]);let s=2;while(n%s)s++;return chk(`Donne un diviseur de ${n}, autre que 1 et ${n}.`,v=>Number.isInteger(v)&&v>1&&v<n&&n%v===0,String(s),`Par exemple ${s}, car ${n} = ${s} × ${n/s}.`);}
+  ]},
+{ id:'symetrie', titre:'Symétrie centrale et parallélogramme', mois:4,
+  rappel:[
+    ["A et A' sont symétriques par rapport à O si O est le milieu du segment [AA'].","O est le milieu de [AA'] et AO = 4 cm. AA' = ?",["8 cm","4 cm","2 cm"],"O est au milieu : 4 + 4 = 8."],
+    ["La symétrie centrale fait faire un demi-tour à la figure. Elle conserve les longueurs, les angles et les aires.","Le symétrique d'un segment de 6 cm mesure…",["6 cm","12 cm","3 cm"],"Les longueurs sont conservées."],
+    ["Parallélogramme : côtés opposés parallèles et de même longueur, angles opposés égaux, diagonales qui se coupent en leur milieu. Deux angles qui se suivent font 180°.","Dans ABCD, Â = 70°. Ĉ = ?",["70°","110°","180°"],"Â et Ĉ sont opposés, donc égaux."]
+  ],
+  gens:[
+    ()=>{const c=rnd(-5,5);let a;do{a=rnd(-9,9);}while(a===c);return num(`Sur une droite graduée, A a pour abscisse ${fr(a)}. Quelle est l'abscisse du symétrique de A par rapport au point d'abscisse ${fr(c)} ?`,2*c-a,`Le centre est au milieu : ${fr(c)} + (${fr(c)} − ${fr(a)}).`);},
+    ()=>{const x=rnd(3,15);return num(`ABCD est un parallélogramme et AB = ${x} cm. Combien mesure CD (en cm) ?`,x,'Les côtés opposés ont la même longueur.');},
+    ()=>{let x;do{x=rnd(40,140);}while(x===90);return num(`Dans le parallélogramme ABCD, l'angle Â mesure ${x}°. Combien mesure l'angle B̂ (en °) ?`,180-x,'Deux angles qui se suivent font 180°.');},
+    ()=>{const x=rnd(40,140);return num(`Dans le parallélogramme ABCD, l'angle Â mesure ${x}°. Combien mesure l'angle Ĉ (en °) ?`,x,'Les angles opposés sont égaux.');},
+    ()=>{const d=2*rnd(3,12);return num(`Les diagonales du parallélogramme ABCD se coupent en O. AC = ${d} cm. Combien mesure AO (en cm) ?`,d/2,'Les diagonales se coupent en leur milieu.');},
+    ()=>qcm('La symétrie centrale conserve…',['les longueurs, les angles et les aires','seulement les longueurs','seulement les angles']),
+    ()=>{const x=nz(-9,9),y=nz(-9,9);return num(`Le point A a pour coordonnées (${fr(x)} ; ${fr(y)}). Quelle est l'ordonnée de son symétrique par rapport à l'origine ?`,-y,'On prend les opposés des coordonnées.');},
+    ()=>qcm('Un quadrilatère dont les diagonales se coupent en leur milieu est…',['un parallélogramme','forcément un carré','un trapèze'])
+  ]},
+{ id:'litteral', titre:'Calcul littéral', mois:5,
+  rappel:[
+    ["Une expression littérale contient des lettres qui remplacent des nombres. On peut enlever le signe × devant une lettre : 3 × x s'écrit 3x.","Comment écrire 5 × a ?",["5a","a + 5","55a"],"On enlève juste le ×."],
+    ["Pour calculer une expression, on remplace la lettre par sa valeur : pour x = 2, 3x + 1 = 3 × 2 + 1 = 7.","4x + 1 pour x = 3 ?",["13","44","8"],"4 × 3 + 1 = 13."],
+    ["Réduire : 3x + 5x = 8x, comme 3 pommes + 5 pommes = 8 pommes. Distributivité : k × (a + b) = k × a + k × b.","2x + 7x = ?",["9x","14x","9"],"2 + 7 = 9, on garde le x."]
+  ],
+  gens:[
+    ()=>{const a=rnd(2,9),b=rnd(1,15),x=rnd(1,10);return num(`Calcule ${a}x + ${b} pour x = ${x}.`,a*x+b,`${a} × ${x} + ${b}`);},
+    ()=>{const a=rnd(2,9),b=rnd(2,9);return num(`Réduis : ${a}x + ${b}x = … x  (donne le nombre devant x)`,a+b);},
+    ()=>{const a=rnd(3,9),b=rnd(1,a-1);return num(`Réduis : ${a}x − ${b}x = … x  (donne le nombre devant x)`,a-b);},
+    ()=>{const a=rnd(2,6),b=rnd(1,9),x=rnd(1,9);return num(`Calcule ${a}(x + ${b}) pour x = ${x}.`,a*(x+b),`${a} × (${x} + ${b}) = ${a} × ${x+b}`);},
+    ()=>{const a=rnd(2,6),x=rnd(1,8),b=rnd(1,10),ok=Math.random()<.5,c=ok?a*x+b:a*x+b+nz(-3,3);return qcm(`L'égalité ${a}x + ${b} = ${c} est-elle vraie pour x = ${x} ?`,ok?['Oui','Non']:['Non','Oui'],`${a} × ${x} + ${b} = ${a*x+b}`);},
+    ()=>{const k=rnd(3,9),n=pick([101,102,98,99,103,21,19]);const base=n>50?100:20,e=n-base;return num(`Calcule astucieusement ${k} × ${n}.`,k*n,`${k} × ${n} = ${k} × ${base} ${e<0?'−':'+'} ${k} × ${Math.abs(e)}`);},
+    ()=>qcm('Quelle écriture est égale à 3 × a ?',['3a','a3 + 3','3 + a']),
+    ()=>qcm("Le périmètre d'un carré de côté c s'écrit…",['4c','c + 4','2c'])
+  ]},
+{ id:'proportionnalite', titre:'Proportionnalité et pourcentages', mois:6,
+  rappel:[
+    ["Deux grandeurs sont proportionnelles si on passe de l'une à l'autre en multipliant toujours par le même nombre.","1 kg coûte 3 €. Combien coûtent 4 kg ?",["12 €","7 €","4 €"],"3 × 4 = 12."],
+    ["Passage par l'unité : 5 stylos coûtent 10 €, donc 1 stylo coûte 2 €, donc 3 stylos coûtent 6 €.","4 places coûtent 20 €. Et 7 places ?",["35 €","28 €","23 €"],"1 place = 5 €, donc 7 × 5 = 35."],
+    ["Pourcentage : 25 % de 80 = 80 × 25 ÷ 100 = 20. Astuces : 50 %, c'est la moitié ; 10 %, c'est diviser par 10.","10 % de 250 = ?",["25","2,5","10"],"250 ÷ 10 = 25."]
+  ],
+  gens:[
+    ()=>{const p=rnd(2,9),n1=rnd(2,5),n2=rnd(6,12);return num(`${n1} cahiers coûtent ${n1*p} €. Combien coûtent ${n2} cahiers (en €) ?`,n2*p,`1 cahier coûte ${p} €.`);},
+    ()=>{const pc=pick([10,20,25,50,75]),N=20*rnd(1,15);return num(`Combien font ${pc} % de ${N} ?`,pc*N/100,`${N} × ${pc} ÷ 100`);},
+    ()=>{const g=pick([100,200,300,400]),p2=pick([2,6,8,12]);return num(`Une recette pour 4 personnes utilise ${g} g de farine. Combien en faut-il pour ${p2} personnes (en g) ?`,g*p2/4,`Pour 1 personne : ${g/4} g.`);},
+    ()=>{const v=pick([40,50,60,80,90,100,120]),t=pick([2,3,4]);return num(`Une voiture roule à ${v} km/h pendant ${t} h. Quelle distance parcourt-elle (en km) ?`,v*t);},
+    ()=>{const v=pick([40,60,80,90,100,120]);return num(`Une voiture roule à ${v} km/h pendant 30 minutes. Quelle distance parcourt-elle (en km) ?`,v/2,'30 minutes, c’est une demi-heure.');},
+    ()=>{const k=rnd(2,6),xs=shuffle([2,3,4,5,6,7,8]).slice(0,3).sort((a,b)=>a-b);const ys=xs.map(x=>x*k);const ok=Math.random()<.5;if(!ok)ys[2]+=pick([-1,1,2]);return qcm(`Ce tableau est-il un tableau de proportionnalité ?<table class="t"><tr>${xs.map(x=>`<td>${x}</td>`).join('')}</tr><tr>${ys.map(y=>`<td>${y}</td>`).join('')}</tr></table>`,ok?['Oui','Non']:['Non','Oui'],`Vérifie si on multiplie toujours par ${k}.`);},
+    ()=>{const prix=10*rnd(2,15),pc=pick([10,20,50]);return num(`Un jean à ${prix} € est soldé à −${pc} %. Quel est son nouveau prix (en €) ?`,prix*(100-pc)/100,`La réduction vaut ${prix*pc/100} €.`);}
+  ]},
+{ id:'aires', titre:'Aires et périmètres', mois:7,
+  rappel:[
+    ["Rectangle : aire = longueur × largeur ; périmètre = 2 × (longueur + largeur).","Aire d'un rectangle de 5 cm sur 3 cm ?",["15 cm²","16 cm²","8 cm²"],"5 × 3 = 15, en cm²."],
+    ["Triangle : aire = base × hauteur ÷ 2. Parallélogramme : aire = base × hauteur.","Triangle de base 6 cm et de hauteur 4 cm ?",["12 cm²","24 cm²","10 cm²"],"6 × 4 = 24, puis ÷ 2 = 12."],
+    ["Cercle de rayon r : périmètre = 2 × π × r ; aire du disque = π × r × r, avec π ≈ 3,14.","Aire d'un disque de rayon 10 cm ?",["314 cm²","62,8 cm²","31,4 cm²"],"3,14 × 10 × 10 = 314."]
+  ],
+  gens:[
+    ()=>{const L=rnd(3,15),l=rnd(2,L);return num(`Aire d'un rectangle de ${L} cm sur ${l} cm (en cm²) ?`,L*l);},
+    ()=>{const L=rnd(3,15),l=rnd(2,L);return num(`Périmètre d'un rectangle de ${L} cm sur ${l} cm (en cm) ?`,2*(L+l),`2 × (${L} + ${l})`);},
+    ()=>{let b=rnd(2,14);const h=rnd(2,12);if((b*h)%2)b++;return num(`Aire d'un triangle de base ${b} cm et de hauteur ${h} cm (en cm²) ?`,b*h/2,`${b} × ${h} ÷ 2`);},
+    ()=>{const b=rnd(3,12),h=rnd(2,10);return num(`Aire d'un parallélogramme de base ${b} cm et de hauteur ${h} cm (en cm²) ?`,b*h);},
+    ()=>{const r=rnd(1,10);return num(`Périmètre d'un cercle de rayon ${r} cm, arrondi à l'unité (π ≈ 3,14) ?`,Math.round(2*3.14*r),`2 × 3,14 × ${r} = ${fr(2*3.14*r)}`);},
+    ()=>{const r=pick([1,2,3,4,6,10]);return num(`Aire d'un disque de rayon ${r} cm, arrondie à l'unité (π ≈ 3,14) ?`,Math.round(3.14*r*r),`3,14 × ${r} × ${r} = ${fr(3.14*r*r)}`);},
+    ()=>pick([num('1 m² = … dm²',100,'1 m = 10 dm, donc 1 m² = 10 × 10 dm².'),num('3 dm² = … cm²',300,'1 dm² = 100 cm².'),num('500 cm² = … dm²',5,'100 cm² = 1 dm².')])
+  ]},
+{ id:'volumes', titre:'Volumes', mois:8,
+  rappel:[
+    ["Pavé droit : volume = longueur × largeur × hauteur. Cube : côté × côté × côté.","Cube de 3 cm de côté ?",["27 cm³","9 cm³","18 cm³"],"3 × 3 × 3 = 27."],
+    ["Prisme droit et cylindre : volume = aire de la base × hauteur.","Base de 10 cm², hauteur de 5 cm. Volume ?",["50 cm³","15 cm³","25 cm³"],"10 × 5 = 50."],
+    ["Conversions : 1 dm³ = 1 L et 1 cm³ = 1 mL, donc 1 L = 1 000 cm³.","2 L = … cm³",["2000","200","20"],"2 × 1 000 = 2 000."]
+  ],
+  gens:[
+    ()=>{const a=rnd(2,10),b=rnd(2,8),c=rnd(2,6);return num(`Volume d'un pavé droit de ${a} cm × ${b} cm × ${c} cm (en cm³) ?`,a*b*c);},
+    ()=>{const c=rnd(2,6);return num(`Volume d'un cube de ${c} cm de côté (en cm³) ?`,c*c*c,`${c} × ${c} × ${c}`);},
+    ()=>{let b=rnd(2,8);const h=rnd(2,6),H=rnd(2,10);if((b*h)%2)b++;return num(`Un prisme droit a pour base un triangle de base ${b} cm et de hauteur ${h} cm. Sa hauteur est ${H} cm. Son volume (en cm³) ?`,b*h/2*H,`Aire de la base : ${b*h/2} cm², puis × ${H}.`);},
+    ()=>{const r=rnd(1,4),h=rnd(2,10);return num(`Volume d'un cylindre de rayon ${r} cm et de hauteur ${h} cm, arrondi à l'unité (π ≈ 3,14) ?`,Math.round(3.14*r*r*h),`3,14 × ${r} × ${r} × ${h} = ${fr(3.14*r*r*h)}`);},
+    ()=>{const k=rnd(2,9);return pick([num('1 L = … cm³',1000),num(`${k} dm³ = … L`,k,'1 dm³ = 1 L.'),num(`${k*500} cm³ = … L`,k/2,'1 000 cm³ = 1 L.'),num(`${k} L = … mL`,k*1000,'1 L = 1 000 mL.')]);}
+  ]},
+{ id:'stats', titre:'Statistiques et probabilités', mois:9,
+  rappel:[
+    ["Moyenne : on additionne toutes les valeurs, puis on divise par le nombre de valeurs.","Moyenne de 10, 12 et 14 ?",["12","36","13"],"10 + 12 + 14 = 36, et 36 ÷ 3 = 12."],
+    ["Fréquence = effectif ÷ effectif total. On peut l'écrire en pourcentage : 5 sur 20 = 25 %.","10 élèves sur 40. Fréquence ?",["25 %","10 %","40 %"],"10 ÷ 40 = 0,25 = 25 %."],
+    ["Probabilité = nombre de cas favorables ÷ nombre de cas possibles. Elle est toujours entre 0 et 1.","Probabilité de faire 3 avec un dé ?",["1/6","1/3","3/6"],"Une seule face sur six."]
+  ],
+  gens:[
+    ()=>{const m=rnd(8,16),a=rnd(0,4),b=rnd(0,4);const notes=shuffle([m+a,m-a,m+b,m-b]);return num(`Quelle est la moyenne de ces notes : ${notes.join(' ; ')} ?`,m,`Somme : ${4*m}, puis ÷ 4.`);},
+    ()=>{const n=rnd(1,19);return num(`Sur 20 élèves, ${n} viennent à pied. Quelle est la fréquence, en % ?`,n*5,`${n} ÷ 20 = ${fr(n/20)} = ${n*5} %`);},
+    ()=>{const a=rnd(3,12),b=rnd(3,12),c=rnd(3,12);return num(`Couleurs préférées : bleu ${a}, rouge ${b}, vert ${c}. Quel est l'effectif total ?`,a+b+c);},
+    ()=>pick([frac('On lance un dé à 6 faces. Quelle est la probabilité d’obtenir 6 ?  (écris par exemple 1/6)',1,6),frac('On lance un dé à 6 faces. Quelle est la probabilité d’obtenir un nombre pair ?',3,6,'2, 4 et 6 : trois faces sur six.'),frac('On lance un dé à 6 faces. Quelle est la probabilité d’obtenir 5 ou 6 ?',2,6,'Deux faces sur six.')]),
+    ()=>{const r=rnd(1,8),b=rnd(1,8);return frac(`Une urne contient ${r} boules rouges et ${b} boules bleues. Quelle est la probabilité de tirer une boule rouge ?`,r,r+b,`${r} rouges sur ${r+b} boules.`);},
+    ()=>qcm('Une probabilité est toujours…',['comprise entre 0 et 1','plus grande que 1','négative']),
+    ()=>{const m=rnd(6,15),a=rnd(1,4);return num(`Quelle est la moyenne de ${m-a}, ${m} et ${m+a} ?`,m,`Somme : ${3*m}, puis ÷ 3.`);}
+  ]}
+];
+const MOIS=['septembre','octobre','novembre','décembre','janvier','février','mars','avril','mai','juin'];
+
+/* =====================================================================
+   CORRECTION
+   ===================================================================== */
+function parseNum(s){s=String(s).replace(/−/g,'-').replace(/,/g,'.').replace(/\s/g,'');if(s===''||s==='-'||s==='.')return NaN;return Number(s);}
+function parseFrac(s){s=String(s).replace(/\s/g,'');if(s.includes('/')){const[a,b]=s.split('/');const n=parseNum(a),d=parseNum(b);if(!isFinite(n)||!isFinite(d)||d===0)return null;return{v:n/d,n,d,isF:true};}const v=parseNum(s);return isFinite(v)?{v,isF:false}:null;}
+function isCorrect(q,input){
+  if(q.type==='qcm')return input===q.answer;
+  if(q.type==='num'){const v=parseNum(input);return isFinite(v)&&Math.abs(v-q.answer)<1e-6;}
+  if(q.type==='chk'){const v=parseNum(input);return isFinite(v)&&q.check(v);}
+  const p=parseFrac(input);if(!p)return false;
+  if(Math.abs(p.v-q.n/q.d)>1e-9)return false;
+  if(q.irr){
+    if(p.isF)return Number.isInteger(p.n)&&Number.isInteger(p.d)&&gcd(p.n,p.d)===1;
+    return Number.isInteger(p.v);
+  }
+  return true;
+}
+function answerLabel(q){
+  if(q.type==='qcm')return q.answer;
+  if(q.type==='num')return fr(q.answer);
+  if(q.type==='chk')return q.sample+' (par exemple)';
+  const g=gcd(q.n,q.d),n=q.n/g,d=q.d/g;return d===1?String(n):F(n,d);
+}
+function makeExercise(theme){
+  const qs=[],seen=new Set();let gens=[];let guard=0;
+  while(qs.length<CONFIG.questionsParExercice&&guard<400){
+    guard++;if(!gens.length)gens=shuffle(theme.gens);
+    const q=gens.pop()();
+    if(seen.has(q.q)&&guard<300)continue;
+    seen.add(q.q);qs.push(q);
+  }
+  return qs;
+}
+
+/* =====================================================================
+   DATES
+   ===================================================================== */
+const pad=n=>String(n).padStart(2,'0');
+const keyOf=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayKey=()=>keyOf(new Date());
+function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());const wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);return x;}
+const weekKey=()=>keyOf(mondayOf(new Date()));
+function fromKey(k){const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d);}
+function weekLabel(k){const a=fromKey(k),b=new Date(a);b.setDate(b.getDate()+6);const f=x=>`${pad(x.getDate())}/${pad(x.getMonth()+1)}`;return `du lundi ${f(a)} au dimanche ${f(b)}`;}
+function schoolMonth(){const m=new Date().getMonth();return (m-8+12)%12;} // septembre = 0 ; juillet-août = 10-11
+
+/* =====================================================================
+   DONNÉES ET SYNCHRONISATION
+   ===================================================================== */
+const STORE_KEY='cartable_maths_'+CONFIG.supabase.eleveId;
+let S=null, syncState='local', pushTimer=null;
+const supaOn=()=>!!(CONFIG.supabase.url&&CONFIG.supabase.cle);
+const supaHeaders=()=>({apikey:CONFIG.supabase.cle,Authorization:'Bearer '+CONFIG.supabase.cle,'Content-Type':'application/json'});
+const defaultState=()=>({version:1,updatedAt:0,pinHash:null,unlockAll:false,weeks:{},days:{},stats:{}});
+
+async function loadState(){
+  let local=null;
+  try{local=JSON.parse(localStorage.getItem(STORE_KEY));}catch(e){}
+  if(!supaOn()){syncState='local';return local||defaultState();}
+  try{
+    const u=`${CONFIG.supabase.url}/rest/v1/${CONFIG.supabase.table}?id=eq.${encodeURIComponent(CONFIG.supabase.eleveId)}&select=data`;
+    const r=await fetch(u,{headers:supaHeaders()});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const rows=await r.json();syncState='ok';
+    const remote=rows.length?rows[0].data:null;
+    if(remote&&(!local||(remote.updatedAt||0)>=(local.updatedAt||0)))return remote;
+    if(local){schedulePush();return local;}
+    return defaultState();
+  }catch(e){console.warn(e);syncState='horsligne';return local||defaultState();}
+}
+function saveState(){
+  S.updatedAt=Date.now();
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(S));}catch(e){}
+  schedulePush();
+}
+function schedulePush(){if(!supaOn())return;clearTimeout(pushTimer);pushTimer=setTimeout(pushNow,700);}
+async function pushNow(){
+  if(!supaOn())return;
+  try{
+    const r=await fetch(`${CONFIG.supabase.url}/rest/v1/${CONFIG.supabase.table}`,{method:'POST',
+      headers:{...supaHeaders(),Prefer:'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify([{id:CONFIG.supabase.eleveId,data:S,updated_at:new Date().toISOString()}])});
+    syncState=r.ok?'ok':'horsligne';
+  }catch(e){syncState='horsligne';}
+}
+
+function day(){const k=todayKey();if(!S.days[k])S.days[k]={sec:0,attempts:0};return S.days[k];}
+function week(){const k=weekKey();if(!S.weeks[k])S.weeks[k]={earned:0,results:[],days:[],status:'en_cours',mailSent:false,confirmedAt:null};return S.weeks[k];}
+const remaining=()=>Math.max(0,CONFIG.dureeSeanceMin*60-day().sec);
+const st=id=>S.stats[id]||{done:0,sum:0,best:null};
+const unlocked=t=>S.unlockAll||t.mois<=schoolMonth();
+function suggestTheme(){
+  const u=THEMES.filter(unlocked);
+  return u.slice().sort((a,b)=>(st(a.id).done-st(b.id).done)||((st(a.id).sum/(st(a.id).done||1))-(st(b.id).sum/(st(b.id).done||1))))[0];
+}
+function cleanOldDays(){const lim=Date.now()-40*864e5;for(const k of Object.keys(S.days))if(fromKey(k).getTime()<lim)delete S.days[k];}
+
+/* =====================================================================
+   MAILS (EmailJS)
+   ===================================================================== */
+const mailOn=()=>{const e=CONFIG.emailjs;return !!(e.publicKey&&e.serviceId&&e.templateId&&window.emailjs);};
+async function sendMail(sujet,message){
+  if(!mailOn())return false;
+  try{await emailjs.send(CONFIG.emailjs.serviceId,CONFIG.emailjs.templateId,{sujet,message,prenom:CONFIG.prenom},{publicKey:CONFIG.emailjs.publicKey});return true;}
+  catch(e){console.warn(e);return false;}
+}
+function weeklyMail(k,w){
+  const notes=w.results.filter(r=>r.counted);
+  const moy=notes.length?(notes.reduce((s,r)=>s+r.note,0)/notes.length):0;
+  const titre=id=>(THEMES.find(t=>t.id===id)||{}).titre||id;
+  const detail=notes.map(r=>`- ${r.date.split('-').reverse().slice(0,2).join('/')} · ${titre(r.theme)} : ${r.note}/10 → ${euro(r.gain)}`).join('\n')||'- Aucun exercice noté cette semaine.';
+  const libres=w.results.length-notes.length;
+  return {
+    sujet:`Tirelire de ${CONFIG.prenom} : ${euro(w.earned)} à verser`,
+    message:`Semaine ${weekLabel(k)}\n\nMontant à verser : ${euro(w.earned)}\nExercices notés : ${notes.length}${notes.length?` (moyenne ${fr(Math.round(moy*10)/10)}/10)`:''}\nJours travaillés : ${w.days.length}\nExercices d'entraînement en plus : ${libres}\n\nDétail :\n${detail}\n\n${w.earned>0?`${CONFIG.prenom} devra confirmer la réception du virement dans l'appli.`:'Rien à verser cette semaine.'}`
+  };
+}
+async function processWeeks(){
+  const cur=weekKey();week();
+  let changed=false;
+  for(const [k,w] of Object.entries(S.weeks)){
+    if(k<cur&&w.status==='en_cours'){w.status=w.earned>0?'a_verser':'rien';changed=true;}
+  }
+  if(changed)saveState();
+  if(!mailOn())return;
+  for(const [k,w] of Object.entries(S.weeks).sort()){
+    if(k<cur&&!w.mailSent){
+      w.mailSent=true;saveState();await pushNow();   // on réserve l'envoi pour éviter un doublon sur un autre appareil
+      const m=weeklyMail(k,w);
+      const ok=await sendMail(m.sujet,m.message);
+      if(!ok){w.mailSent=false;saveState();}
+    }
+  }
+}
+
+/* =====================================================================
+   INTERFACE
+   ===================================================================== */
+const app=document.getElementById('app');
+let UI={screen:'home'};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function minLabel(){const r=remaining();return r>0?`${Math.ceil(r/60)} min`:'Fini';}
+function header(){
+  return `<div class="top"><img src="icon.png" alt=""><h1>Salut ${esc(CONFIG.prenom)} !</h1><span class="chip ${remaining()<=0?'late':''}" id="chrono">⏱ ${minLabel()}</span></div>`;
+}
+function jarSVG(ratio){
+  const h=Math.round(100*Math.max(0,Math.min(1,ratio))),y=135-h;
+  return `<svg class="jar" viewBox="0 0 120 150" aria-hidden="true">
+  <defs><clipPath id="jc"><rect x="18" y="35" width="84" height="100" rx="16"/></clipPath>
+  <pattern id="pc" width="20" height="12" patternUnits="userSpaceOnUse"><ellipse cx="10" cy="6" rx="9" ry="5" fill="#FFD200" stroke="#2A1F17" stroke-width="1.5"/></pattern></defs>
+  <rect x="18" y="35" width="84" height="100" rx="16" fill="#EAF3FB"/>
+  <g clip-path="url(#jc)"><rect x="10" y="${y}" width="100" height="${h+5}" fill="url(#pc)"/></g>
+  <path d="M32 55 v38" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".85"/>
+  <rect x="18" y="35" width="84" height="100" rx="16" fill="none" stroke="#2A1F17" stroke-width="4"/>
+  <rect x="28" y="15" width="64" height="22" rx="6" fill="#FF9800" stroke="#2A1F17" stroke-width="4"/>
+  <rect x="47" y="23" width="26" height="6" rx="3" fill="#2A1F17"/></svg>`;
+}
+function syncLabel(){
+  if(syncState==='ok')return 'Progrès synchronisés sur tous tes appareils.';
+  if(syncState==='horsligne')return 'Pas de connexion : progrès gardés sur cet appareil, synchronisés plus tard.';
+  return 'Progrès enregistrés sur cet appareil uniquement.';
+}
+function countStatus(){
+  const d=day(),w=week();
+  if(w.earned>=CONFIG.plafondSemaine-1e-9)return {ok:false,why:'Ta tirelire est pleine pour cette semaine.'};
+  if(d.attempts>=CONFIG.exosNotesParJour)return {ok:false,why:`Tes ${CONFIG.exosNotesParJour} exercices notés du jour sont faits.`};
+  if(!w.days.includes(todayKey())&&w.days.length>=CONFIG.joursNotesParSemaine)return {ok:false,why:`Tu as déjà travaillé ${CONFIG.joursNotesParSemaine} jours cette semaine.`};
+  return {ok:true};
+}
+
+/* ---------- Accueil ---------- */
+function renderHome(){
+  UI={screen:'home'};
+  const w=week(),d=day(),rem=remaining(),sug=suggestTheme(),cs=countStatus();
+  const pend=Object.entries(S.weeks).filter(([,x])=>x.status==='a_verser').sort();
+  let h=header();
+  for(const [k,x] of pend){
+    h+=`<div class="card alerte"><p><b>Semaine ${weekLabel(k)}</b></p><p>Ta tirelire contenait <b>${euro(x.earned)}</b>. As-tu bien reçu le virement ?</p>
+    <button class="btn sec" onclick="confirmRecu('${k}')">Oui, j'ai reçu ${euro(x.earned)}</button></div>`;
+  }
+  h+=`<div class="card"><div class="tirelire">${jarSVG(w.earned/CONFIG.plafondSemaine)}<div>
+    <div class="muted">Ma tirelire de la semaine</div>
+    <div class="montant hand">${euro(w.earned)}</div>
+    <div class="barre"><span style="width:${Math.min(100,w.earned/CONFIG.plafondSemaine*100)}%"></span></div>
+    <div class="muted">jusqu'à ${CONFIG.plafondSemaine} € · repart à zéro lundi</div></div></div>
+    <p class="muted" style="margin-top:12px">Exercices notés aujourd'hui : ${Math.min(d.attempts,CONFIG.exosNotesParJour)} sur ${CONFIG.exosNotesParJour}. Jours travaillés cette semaine : ${w.days.length} sur ${CONFIG.joursNotesParSemaine}.</p>
+    ${!cs.ok&&rem>0?`<p class="muted">${cs.why} Tu peux encore t'entraîner, sans gagner de pièces.</p>`:''}</div>`;
+  if(rem>0){
+    h+=`<button class="btn" onclick="openTheme('${sug.id}')">Commencer ma séance</button>
+    <p class="muted centre">Conseillé aujourd'hui : ${esc(sug.titre)}</p>`;
+  }else{
+    h+=`<div class="card centre"><p class="hand" style="font-size:1.7rem">C'est fini pour aujourd'hui, à demain !</p></div>`;
+  }
+  h+=`<h2>Tous les thèmes</h2><div class="themes">`;
+  for(const t of THEMES){
+    const s=st(t.id);
+    if(unlocked(t)){
+      h+=`<button class="tuile ${t.id===sug.id?'sug':''}" ${rem>0?'':'disabled'} onclick="openTheme('${t.id}')"><b>${esc(t.titre)}</b><small>${s.done?`Meilleure note : ${s.best}/10`:'Pas encore fait'}</small></button>`;
+    }else{
+      h+=`<div class="tuile lock"><b>${esc(t.titre)}</b><small>Dès ${MOIS[t.mois]}</small></div>`;
+    }
+  }
+  h+=`</div><p class="muted centre" style="margin-top:26px">${syncLabel()}</p>
+  <p class="centre"><button class="lien" onclick="renderParentLogin()">Espace parent</button></p>`;
+  app.innerHTML=h;
+}
+async function confirmRecu(k){
+  const w=S.weeks[k];if(!w)return;
+  if(!confirm(`Tu confirmes avoir bien reçu ${euro(w.earned)} sur ton compte ?`))return;
+  w.status='recu';w.confirmedAt=new Date().toISOString();saveState();renderHome();
+  sendMail(`${CONFIG.prenom} a bien reçu ses ${euro(w.earned)}`,`${CONFIG.prenom} confirme avoir reçu le virement de ${euro(w.earned)} pour la semaine ${weekLabel(k)}.`);
+}
+
+/* ---------- Rappel de cours ---------- */
+function openTheme(id){
+  if(remaining()<=0)return renderHome();
+  UI={screen:'lesson',theme:THEMES.find(t=>t.id===id),step:0};
+  prepStep();renderLesson();
+}
+function prepStep(){const c=UI.theme.rappel[UI.step];UI.lc=shuffle(c[2]);UI.good=c[2][0];UI.tried=[];UI.ok=false;}
+function renderLesson(){
+  const t=UI.theme,c=t.rappel[UI.step],n=t.rappel.length;
+  let h=header()+`<div class="etapes">${t.rappel.map((_,i)=>`<span class="${i<UI.step||(i===UI.step&&UI.ok)?'ok':''}"></span>`).join('')}</div>
+  <div class="card"><div class="muted">Rappel · ${esc(t.titre)}</div><p class="lecon">${c[0]}</p></div>
+  <div class="card"><p class="enonce">${c[1]}</p><div class="choix">`;
+  for(const ch of UI.lc){
+    const cls=UI.ok&&ch===UI.good?'juste':UI.tried.includes(ch)?'faux':'';
+    h+=`<button class="btn ${cls}" ${UI.ok||UI.tried.includes(ch)?'disabled':''} onclick="lessonAnswer(this.dataset.v)" data-v="${esc(ch)}">${esc(ch)}</button>`;
+  }
+  h+=`</div>`;
+  if(UI.tried.length&&!UI.ok)h+=`<div class="retour f"><span class="hand">Pas tout à fait…</span><p>${c[3]}</p></div>`;
+  if(UI.ok)h+=`<div class="retour j"><span class="hand">Exact !</span><p>${c[3]}</p></div>
+    <button class="btn" id="suite" onclick="lessonNext()">${UI.step<n-1?'Rappel suivant':"C'est parti pour l'exercice"}</button>`;
+  h+=`</div><button class="lien" onclick="renderHome()">Retour à l'accueil</button>`;
+  app.innerHTML=h;
+  const s=document.getElementById('suite');if(s)s.focus();
+}
+function lessonAnswer(v){if(v===UI.good)UI.ok=true;else UI.tried.push(v);renderLesson();}
+function lessonNext(){
+  if(UI.step<UI.theme.rappel.length-1){UI.step++;prepStep();renderLesson();}
+  else startExercise(UI.theme.id);
+}
+
+/* ---------- Exercice ---------- */
+function startExercise(id){
+  if(remaining()<=0)return renderTimeUp();
+  const theme=THEMES.find(t=>t.id===id);
+  const cs=countStatus();
+  if(cs.ok){ // l'essai est compté dès le départ (pas de triche en rechargeant la page)
+    day().attempts++;const w=week();if(!w.days.includes(todayKey()))w.days.push(todayKey());saveState();
+  }
+  UI={screen:'exercise',theme,ex:{qs:makeExercise(theme),i:0,marks:[],counted:cs.ok,why:cs.why||''},input:'',answered:false};
+  renderQuestion();
+}
+function renderQuestion(){
+  const ex=UI.ex,q=ex.qs[ex.i],n=ex.qs.length;
+  let h=header()+`<div class="progres" style="grid-template-columns:repeat(${n},1fr)">${ex.qs.map((_,i)=>`<span class="${ex.marks[i]===true?'j':ex.marks[i]===false?'f':i===ex.i?'c':''}"></span>`).join('')}</div>
+  <div class="card"><div class="muted">${esc(UI.theme.titre)} · question ${ex.i+1} sur ${n}${ex.counted?'':' · entraînement'}</div><p class="enonce">${q.q}</p>`;
+  if(q.type==='qcm'){
+    h+=`<div class="choix">${q.choices.map(c=>{const cls=UI.answered?(c===q.answer?'juste':c===UI.given?'faux':''):'';return `<button class="btn ${cls}" ${UI.answered?'disabled':''} data-v="${esc(c)}" onclick="submitAnswer(this.dataset.v)">${esc(c)}</button>`;}).join('')}</div>`;
+  }else{
+    h+=`<div class="saisie hand" aria-live="polite">${esc(UI.answered?UI.given:UI.input)}${UI.answered?'':'<span class="curseur"></span>'}</div>`;
+  }
+  if(UI.answered){
+    const ok=ex.marks[ex.i];
+    h+=`<div class="retour ${ok?'j':'f'}"><span class="hand">${ok?'Juste !':'Raté…'}</span>${ok?'':`<p>La bonne réponse : <b>${answerLabel(q)}</b></p>`}${q.explain&&!ok?`<p class="muted">${q.explain}</p>`:''}</div>
+    <button class="btn" id="suite" onclick="nextQuestion()">${ex.i<n-1?'Question suivante':'Voir ma note'}</button>`;
+  }else if(q.type!=='qcm'){
+    const slash=q.type==='frac';
+    h+=`<div class="pave">${['7','8','9','⌫','4','5','6','−','1','2','3','/','0',','].map(k=>`<button ${k==='/'&&!slash?'disabled':''} onclick="keyPress('${k}')" aria-label="${k==='⌫'?'Effacer':k}">${k}</button>`).join('')}
+    <button class="ok" onclick="keyPress('OK')">Valider</button></div>`;
+  }
+  h+=`</div>`;
+  if(UI.timeUpWarn)h+=`<p class="muted centre">Les ${CONFIG.dureeSeanceMin} minutes sont passées : termine cet exercice, puis c'est fini pour aujourd'hui.</p>`;
+  app.innerHTML=h;
+  const s=document.getElementById('suite');if(s)s.focus();
+}
+function keyPress(k){
+  if(UI.screen!=='exercise'||UI.answered)return;
+  const q=UI.ex.qs[UI.ex.i];if(q.type==='qcm')return;
+  if(k==='OK'){if(UI.input.trim())submitAnswer(UI.input);return;}
+  if(k==='⌫')UI.input=UI.input.slice(0,-1);
+  else if(k==='/'&&q.type!=='frac')return;
+  else if(UI.input.length<12)UI.input+=k;
+  renderQuestion();
+}
+function submitAnswer(v){
+  if(UI.answered)return;
+  const q=UI.ex.qs[UI.ex.i];
+  UI.given=v;UI.answered=true;UI.ex.marks[UI.ex.i]=isCorrect(q,v);
+  renderQuestion();
+}
+function nextQuestion(){
+  const ex=UI.ex;
+  if(ex.i<ex.qs.length-1){ex.i++;UI.input='';UI.answered=false;UI.given='';renderQuestion();}
+  else finishExercise();
+}
+function finishExercise(){
+  const ex=UI.ex,t=UI.theme,n=ex.qs.length;
+  const good=ex.marks.filter(Boolean).length;
+  const note=Math.round(good*10/n);
+  const w=week();let gain=0;
+  if(ex.counted&&note>=7){gain=Math.min(CONFIG.bareme[note]||0,Math.max(0,CONFIG.plafondSemaine-w.earned));gain=Math.round(gain*100)/100;w.earned=Math.round((w.earned+gain)*100)/100;}
+  w.results.push({date:todayKey(),theme:t.id,note,gain,counted:ex.counted});
+  const s=st(t.id);S.stats[t.id]={done:s.done+1,sum:s.sum+note,best:Math.max(s.best??0,note)};
+  saveState();
+  const errs=ex.qs.map((q,i)=>ex.marks[i]?'':`<div class="erreur"><p>${q.q}</p><p>Bonne réponse : <b>${answerLabel(q)}</b></p></div>`).join('');
+  const msg=note===10?'Parfait !':note>=8?'Très bien !':note>=7?"C'est gagné !":note>=5?'Presque ! Encore un effort.':'Relis le rappel et réessaie.';
+  let gainTxt;
+  if(!ex.counted)gainTxt=`<p class="muted">Exercice d'entraînement. ${esc(ex.why)}</p>`;
+  else if(gain>0)gainTxt=`<p><span class="piece">€</span></p><p><b>+${euro(gain)}</b> dans ta tirelire, qui contient maintenant ${euro(w.earned)}.</p>`;
+  else if(note>=7)gainTxt=`<p class="muted">Ta tirelire est déjà pleine cette semaine. Bravo !</p>`;
+  else gainTxt=`<p class="muted">Pas de pièce cette fois : il faut au moins 7/10.</p>`;
+  const rem=remaining();
+  let h=header()+`<div class="card centre"><div class="muted">${esc(t.titre)}</div><div class="note hand">${note}/10</div>
+    <p class="hand" style="font-size:1.7rem;color:var(--rouge);margin:0">${msg}</p>${gainTxt}
+    ${errs?`<details style="text-align:left"><summary>Revoir mes erreurs</summary>${errs}</details>`:''}</div>`;
+  if(rem>0&&!UI.timeUpWarn){
+    const cs=countStatus();
+    h+=`<button class="btn" onclick="startExercise('${t.id}')">Un autre exercice sur ce thème${cs.ok?'':' (entraînement)'}</button>
+    <button class="btn sec" onclick="openTheme('${t.id}')">Revoir le rappel</button>
+    <button class="btn sec" onclick="renderHome()">Retour à l'accueil</button>`;
+  }else{
+    h+=`<p class="hand centre" style="font-size:1.6rem">C'est fini pour aujourd'hui, à demain !</p><button class="btn sec" onclick="renderHome()">Retour à l'accueil</button>`;
+  }
+  UI={screen:'result'};
+  app.innerHTML=h;
+}
+function renderTimeUp(){
+  UI={screen:'timeup'};
+  app.innerHTML=header()+`<div class="card centre"><p class="hand" style="font-size:1.9rem">${CONFIG.dureeSeanceMin} minutes, c'est fini pour aujourd'hui !</p><p>Reviens demain pour remplir ta tirelire.</p></div><button class="btn sec" onclick="renderHome()">Retour à l'accueil</button>`;
+}
+
+/* ---------- Chronomètre ---------- */
+setInterval(()=>{
+  if(!S||document.visibilityState!=='visible')return;
+  if(UI.screen!=='lesson'&&UI.screen!=='exercise')return;
+  const d=day();d.sec++;
+  if(d.sec%15===0)saveState();
+  const c=document.getElementById('chrono');
+  if(c){c.textContent='⏱ '+minLabel();c.classList.toggle('late',remaining()<=0);}
+  if(remaining()<=0){
+    if(UI.screen==='lesson'){saveState();renderTimeUp();}
+    else if(!UI.timeUpWarn){UI.timeUpWarn=true;saveState();if(!UI.answered)renderQuestion();}
+  }
+},1000);
+
+/* ---------- Clavier physique ---------- */
+document.addEventListener('keydown',e=>{
+  if(UI.screen!=='exercise')return;
+  if(e.target&&e.target.tagName==='INPUT')return;
+  if(UI.answered){if(e.key==='Enter'){e.preventDefault();nextQuestion();}return;}
+  const map={'Backspace':'⌫','Enter':'OK','-':'−',',':',','.':',','/':'/'};
+  const k=/^[0-9]$/.test(e.key)?e.key:map[e.key];
+  if(k){e.preventDefault();keyPress(k);}
+});
+
+/* =====================================================================
+   ESPACE PARENT
+   ===================================================================== */
+const hashPin=s=>{let h=5381;for(const c of 'sel-cartable|'+s)h=((h<<5)+h+c.charCodeAt(0))>>>0;return h.toString(36);};
+function renderParentLogin(msg=''){
+  UI={screen:'parentlogin'};
+  const creation=!S.pinHash;
+  app.innerHTML=header()+`<div class="card"><h2 style="margin-top:0">Espace parent</h2>
+  ${creation?`<p>Crée ton code parent (4 chiffres ou plus). ${esc(CONFIG.prenom)} ne doit pas le connaître.</p>
+    <input class="champ" id="p1" type="password" inputmode="numeric" autocomplete="off" placeholder="Nouveau code">
+    <input class="champ" id="p2" type="password" inputmode="numeric" autocomplete="off" placeholder="Confirme le code">`
+  :`<input class="champ" id="p1" type="password" inputmode="numeric" autocomplete="off" placeholder="Code parent">`}
+  ${msg?`<p style="color:var(--rouge)">${msg}</p>`:''}
+  <button class="btn cuir" onclick="parentLogin()">${creation?'Créer le code':'Entrer'}</button></div>
+  <button class="lien" onclick="renderHome()">Retour à l'accueil</button>`;
+  document.getElementById('p1').focus();
+}
+function parentLogin(){
+  const p1=document.getElementById('p1').value.trim();
+  if(!S.pinHash){
+    const p2=document.getElementById('p2').value.trim();
+    if(p1.length<4)return renderParentLogin('Le code doit faire au moins 4 chiffres.');
+    if(p1!==p2)return renderParentLogin('Les deux codes sont différents.');
+    S.pinHash=hashPin(p1);saveState();return renderParent();
+  }
+  if(hashPin(p1)!==S.pinHash)return renderParentLogin('Code incorrect.');
+  renderParent();
+}
+function renderParent(info=''){
+  UI={screen:'parent'};
+  const w=week(),weeks=Object.entries(S.weeks).sort().reverse();
+  const lib={en_cours:'En cours',a_verser:'À verser',recu:'Reçu',rien:'Rien à verser'};
+  let h=header()+`<h2 style="margin-top:4px">Espace parent</h2>${info?`<div class="card alerte"><p>${info}</p></div>`:''}
+  <div class="card"><h3>Semaines</h3>`;
+  for(const [k,x] of weeks){
+    const notes=x.results.filter(r=>r.counted);
+    h+=`<div class="ligne"><div><b>${euro(x.earned)}</b> <span class="muted">· ${weekLabel(k)}</span><br><span class="muted">${notes.length} exercice(s) noté(s), ${x.days.length} jour(s)${k<weekKey()?` · mail ${x.mailSent?'envoyé':'non envoyé'}`:''}</span></div>
+    <div><span class="statut ${x.status}">${lib[x.status]}</span>
+    ${x.status==='a_verser'?`<button class="lien" onclick="parentRecu('${k}')">Marquer reçu</button>`:''}
+    ${k<weekKey()&&mailOn()?`<button class="lien" onclick="resendMail('${k}')">Renvoyer le mail</button>`:''}</div></div>`;
+  }
+  h+=`</div><div class="card"><h3>Dernières notes</h3>`;
+  const last=Object.values(S.weeks).flatMap(x=>x.results).sort((a,b)=>a.date<b.date?1:-1).slice(0,12);
+  h+=last.length?last.map(r=>`<div class="ligne"><span>${r.date.split('-').reverse().join('/')} · ${esc((THEMES.find(t=>t.id===r.theme)||{}).titre||r.theme)}</span><span><b>${r.note}/10</b> ${r.counted?`· ${euro(r.gain)}`:'· entraînement'}</span></div>`).join(''):'<p class="muted">Aucun exercice pour le moment.</p>';
+  h+=`</div><div class="card"><h3>Réglages</h3>
+  <label class="bascule"><input type="checkbox" ${S.unlockAll?'checked':''} onchange="S.unlockAll=this.checked;saveState()"> Débloquer tous les thèmes dès maintenant</label>
+  <div class="petits" style="margin-top:8px">
+    <button class="btn sec" onclick="bonusTime()">+10 min aujourd'hui</button>
+    <button class="btn sec" onclick="resetDay()">Remettre la journée à zéro</button>
+    <button class="btn sec" onclick="testMail()">Tester le mail</button>
+    <button class="btn sec" onclick="S.pinHash=null;saveState();renderParentLogin()">Changer le code</button>
+  </div>
+  <p class="muted" style="margin-top:12px">Synchronisation : ${supaOn()?(syncState==='ok'?'active':'configurée mais injoignable'):'non configurée (cet appareil seulement)'}.<br>Mail hebdomadaire : ${mailOn()?'configuré':'non configuré'}.</p>
+  <button class="btn sec" style="border-color:var(--rouge);color:var(--rouge)" onclick="resetAll()">Tout effacer</button></div>
+  <button class="btn" onclick="renderHome()">Retour à l'accueil</button>`;
+  app.innerHTML=h;
+}
+function parentRecu(k){const w=S.weeks[k];w.status='recu';w.confirmedAt=new Date().toISOString();saveState();renderParent('Semaine marquée comme reçue.');}
+async function resendMail(k){const m=weeklyMail(k,S.weeks[k]);const ok=await sendMail(m.sujet,m.message);if(ok){S.weeks[k].mailSent=true;saveState();}renderParent(ok?'Mail renvoyé.':"Le mail n'est pas parti : vérifie les réglages EmailJS.");}
+async function testMail(){
+  if(!mailOn())return renderParent("Le mail n'est pas encore configuré (voir le guide, étape EmailJS).");
+  const k=weekKey(),m=weeklyMail(k,week());
+  const ok=await sendMail('[Test] '+m.sujet,m.message);
+  renderParent(ok?'Mail de test envoyé : vérifie ta boîte (et les spams).':"Échec de l'envoi : vérifie les trois identifiants EmailJS.");
+}
+function bonusTime(){const d=day();d.sec=Math.max(0,d.sec-600);saveState();renderParent('10 minutes ajoutées pour aujourd\'hui.');}
+function resetDay(){S.days[todayKey()]={sec:0,attempts:0};saveState();renderParent('Journée remise à zéro (temps et exercices notés).');}
+function resetAll(){
+  if(!confirm('Effacer toutes les notes, tirelires et le code parent ?'))return;
+  if(!confirm('Vraiment tout effacer ? Impossible de revenir en arrière.'))return;
+  S=defaultState();saveState();renderHome();
+}
+
+/* =====================================================================
+   DÉMARRAGE
+   ===================================================================== */
+async function refresh(){
+  S=await loadState();
+  if(!S.weeks)S=defaultState();
+  cleanOldDays();week();day();
+  await processWeeks();
+}
+(async()=>{
+  await refresh();
+  renderHome();
+  // Quand on revient sur l'appli (autre appareil utilisé entre-temps), on recharge les données
+  document.addEventListener('visibilitychange',async()=>{
+    if(document.visibilityState==='visible'&&(UI.screen==='home')){await refresh();renderHome();}
+  });
+})();
+</script>
+</body>
+</html>

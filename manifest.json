@@ -1,0 +1,9 @@
+{
+  "name": "Mon cartable – Maths 5e",
+  "short_name": "Maths 5e",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FDFDFB",
+  "theme_color": "#FF9800",
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}
