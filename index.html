@@ -165,29 +165,36 @@ input.champ{font:inherit;font-size:1.3rem;padding:10px 12px;border:3px solid var
 <body>
 <main class="page" id="app"><p class="hand" style="font-size:1.6rem;margin-top:40px">Ouverture du cartable…</p></main>
 
+<script src="config.js"></script>
 <script>
 /* =====================================================================
-   RÉGLAGES — c'est la seule partie à modifier (voir le guide)
+   Réglages par défaut (les tiens sont dans config.js)
    ===================================================================== */
-const CONFIG = {
+const CONFIG_DEFAUT = {
   prenom: "Benjamin",
-  dureeSeanceMin: 20,          // temps maximum par jour
+  dureeSeanceMin: 20,
   questionsParExercice: 10,
-  exosNotesParJour: 2,         // les 2 premiers exercices du jour comptent pour la tirelire
-  joursNotesParSemaine: 4,     // 4 jours "payés" par semaine
-  plafondSemaine: 20,          // en euros
-  bareme: { 7: 0.60, 8: 1.20, 9: 1.80, 10: 2.50 },   // gain par exercice selon la note sur 10
-
-  // Synchronisation entre appareils (Supabase). Laisser vide = enregistré sur l'appareil seulement.
-  supabase: { url: "https://knghvytydsgbbcigzjyt.supabase.co", cle: "sb_publishable_IjKiOMFC_qR7p7a9L7peOA_cVWN5cM5", table: "tirelire", eleveId: "benjamin" },
-
-  // Mail hebdomadaire (EmailJS). Laisser vide = pas de mail.
-  emailjs: { publicKey: "XLENG4eXuSUD7v3xI", serviceId: "service_42596eo", templateId: "template_9yd5g8f" }
+  exosNotesParJour: 2,
+  joursNotesParSemaine: 4,
+  plafondSemaine: 20,
+  bareme: { 7: 0.60, 8: 1.20, 9: 1.80, 10: 2.50 },
+  supabase: { url: "", cle: "", table: "tirelire", eleveId: "benjamin" },
+  emailjs: { publicKey: "", serviceId: "", templateId: "" }
 };
+// Les vrais réglages (clés Supabase et EmailJS) sont dans config.js : une mise à jour de index.html ne les efface plus.
+const _U = window.CONFIG_UTILISATEUR || {};
+const CONFIG = Object.assign({}, CONFIG_DEFAUT, _U, {
+  supabase: Object.assign({}, CONFIG_DEFAUT.supabase, _U.supabase || {}),
+  emailjs: Object.assign({}, CONFIG_DEFAUT.emailjs, _U.emailjs || {}),
+  bareme: _U.bareme || CONFIG_DEFAUT.bareme
+});
 
 /* =====================================================================
    OUTILS
    ===================================================================== */
+function withSeed(seed,fn){const orig=Math.random;let a=seed>>>0;
+  Math.random=function(){a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};
+  try{return fn();}finally{Math.random=orig;}}
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -210,7 +217,7 @@ const chk=(q,check,sample,explain='')=>({type:'chk',q,check,sample,explain});
    rappel : [texte, question, [bonne réponse, autres…], aide]
    ===================================================================== */
 const THEMES = [
-{ id:'decimaux', titre:'Révisions : nombres décimaux', mois:0,
+{ id:'decimaux', rg:[[3],[1,2],[4]], titre:'Révisions : nombres décimaux', mois:0,
   rappel:[
     ["Pour comparer deux décimaux, on compare la partie entière, puis les dixièmes, puis les centièmes. Astuce : ajoute des zéros pour avoir autant de chiffres, 2,5 = 2,50.","Lequel est le plus grand ?",["2,5","2,45"],"2,5 = 2,50, et 50 centièmes, c'est plus que 45 centièmes."],
     ["Multiplier par 10, 100 ou 1 000 décale la virgule de 1, 2 ou 3 rangs vers la droite. Diviser la décale vers la gauche.","3,7 × 100 = ?",["370","37","0,037"],"Deux rangs vers la droite : 3,7 → 37 → 370."],
@@ -224,7 +231,7 @@ const THEMES = [
     ()=>{const x=rnd(1000,9999)/100;return num(`Arrondis ${fr(x)} à l'unité.`,Math.round(x),'On regarde le chiffre des dixièmes.');},
     ()=>{const a=rnd(2,9),b=rnd(2,9);return num(`${fr(a/10)} × ${b} = ?`,a*b/10,`${a} × ${b} = ${a*b} dixièmes, soit ${fr(a*b/10)}.`);}
   ]},
-{ id:'relatifs', titre:'Nombres relatifs', mois:0,
+{ id:'relatifs', rg:[[2,4],[0,3],[1]], titre:'Nombres relatifs', mois:0,
   rappel:[
     ["Un nombre relatif a un signe : positif (+) ou négatif (−). Sur une droite graduée, plus on va à gauche, plus il est petit. Donc −8 < −2.","Lequel est le plus petit ?",["−8","−2"],"−8 est plus à gauche que −2 sur la droite graduée."],
     ["Addition : même signe → on additionne les distances à zéro et on garde le signe. Signes différents → on soustrait et on garde le signe du plus éloigné de zéro.","(−5) + (+3) = ?",["−2","+2","−8"],"5 − 3 = 2, et c'est −5 le plus éloigné de zéro : −2."],
@@ -238,7 +245,7 @@ const THEMES = [
     ()=>{const a=nz(-20,20);return num(`Quel est l'opposé de ${fr(a)} ?`,-a,"L'opposé a la même distance à zéro, avec le signe contraire.");},
     ()=>{const a=rnd(-9,-1),b=rnd(1,9);return num(`Sur une droite graduée, A a pour abscisse ${fr(a)} et B a pour abscisse ${b}. Quelle est la distance AB ?`,b-a,`${b} − (${fr(a)}) = ${b-a}`);}
   ]},
-{ id:'priorites', titre:'Priorités opératoires', mois:0,
+{ id:'priorites', rg:[[6],[0,2,3],[1,5]], titre:'Priorités opératoires', mois:0,
   rappel:[
     ["Ordre des calculs : d'abord les parenthèses, puis les multiplications et divisions, enfin les additions et soustractions.","Dans 4 + 3 × 2, on commence par…",["3 × 2","4 + 3"],"La multiplication passe avant l'addition."],
     ["Exemple : 4 + 3 × 2 = 4 + 6 = 10, et pas 14 !","5 + 2 × 4 = ?",["13","28"],"2 × 4 = 8, puis 5 + 8 = 13."],
@@ -253,7 +260,7 @@ const THEMES = [
     ()=>{const a=rnd(20,40),b=rnd(2,10),c=rnd(2,10);return num(`${a} − ${b} + ${c} = ?`,a-b+c,'De gauche à droite.');},
     ()=>{const a=rnd(2,9),b=rnd(2,9),c=rnd(2,9);return qcm(`Dans ${a} + ${b} × ${c}, quel calcul fait-on en premier ?`,[`${b} × ${c}`,`${a} + ${b}`]);}
   ]},
-{ id:'angles', titre:'Angles et triangles', mois:1,
+{ id:'angles', rg:[[0],[1,2,6],[3]], titre:'Angles et triangles', mois:1,
   rappel:[
     ["Dans un triangle, la somme des trois angles vaut toujours 180°.","Deux angles font 50° et 70°. Le troisième ?",["60°","80°","120°"],"180 − 50 − 70 = 60."],
     ["Triangle isocèle : les deux angles à la base sont égaux. Triangle équilatéral : trois angles de 60°.","Isocèle, angles à la base de 40°. L'angle au sommet ?",["100°","40°","140°"],"180 − 40 − 40 = 100."],
@@ -268,7 +275,7 @@ const THEMES = [
     ()=>{const x=rnd(30,150);return num(`Deux droites parallèles sont coupées par une sécante. Un angle mesure ${x}°. Combien mesure l'angle alterne-interne associé (en °) ?`,x,'Avec des parallèles, les angles alternes-internes sont égaux.');},
     ()=>qcm("Combien mesure chaque angle d'un triangle équilatéral ?",['60°','90°','45°','180°'],'180 ÷ 3 = 60.')
   ]},
-{ id:'fractions', titre:'Fractions', mois:2,
+{ id:'fractions', rg:[[0,1],[2,3,6],[4]], titre:'Fractions', mois:2,
   rappel:[
     ["On ne change pas une fraction en multipliant (ou en divisant) le numérateur et le dénominateur par le même nombre : 2/3 = 4/6 = 6/9.","3/4 = ?/8",["6","7","3"],"4 × 2 = 8, donc 3 × 2 = 6."],
     ["Pour additionner des fractions, il faut le même dénominateur. On additionne alors les numérateurs : 2/7 + 3/7 = 5/7. Pour écrire une fraction, tape par exemple 5/7.","1/5 + 2/5 = ?",["3/5","3/10"],"On garde le dénominateur 5 et on additionne 1 + 2."],
@@ -283,7 +290,7 @@ const THEMES = [
     ()=>{let d=rnd(2,9),n;do{n=rnd(1,2*d);}while(n===d);return qcm(`${F(n,d)} est-il plus grand ou plus petit que 1 ?`,n>d?['Plus grand que 1','Plus petit que 1']:['Plus petit que 1','Plus grand que 1'],'Si le numérateur est plus grand que le dénominateur, la fraction dépasse 1.');},
     ()=>{const d=rnd(3,12),a=rnd(2,d+5),b=rnd(1,a-1);return frac(`${F(a,d)} − ${F(b,d)} = ?`,a-b,d,'On garde le dénominateur et on soustrait les numérateurs.');}
   ]},
-{ id:'divisibilite', titre:'Multiples, diviseurs, nombres premiers', mois:3,
+{ id:'divisibilite', rg:[[0],[0],[1]], titre:'Multiples, diviseurs, nombres premiers', mois:3,
   rappel:[
     ["Divisible par 2 si le nombre finit par 0, 2, 4, 6 ou 8. Par 5 s'il finit par 0 ou 5. Par 10 s'il finit par 0.","Lequel est divisible par 5 ?",["135","132","128"],"135 finit par 5."],
     ["Divisible par 3 (ou par 9) si la somme de ses chiffres est divisible par 3 (ou par 9). 471 → 4 + 7 + 1 = 12, divisible par 3.","252 est-il divisible par 9 ?",["Oui","Non"],"2 + 5 + 2 = 9."],
@@ -297,7 +304,7 @@ const THEMES = [
     ()=>{const k=rnd(3,9),m=rnd(30,90);return num(`Quel est le plus petit multiple de ${k} strictement plus grand que ${m} ?`,(Math.floor(m/k)+1)*k);},
     ()=>{const n=pick([12,18,20,24,28,30,36,40,42,45,48,50,60]);let s=2;while(n%s)s++;return chk(`Donne un diviseur de ${n}, autre que 1 et ${n}.`,v=>Number.isInteger(v)&&v>1&&v<n&&n%v===0,String(s),`Par exemple ${s}, car ${n} = ${s} × ${n/s}.`);}
   ]},
-{ id:'symetrie', titre:'Symétrie centrale et parallélogramme', mois:4,
+{ id:'symetrie', rg:[[0,6],[5],[1,2,3,4,7]], titre:'Symétrie centrale et parallélogramme', mois:4,
   rappel:[
     ["A et A' sont symétriques par rapport à O si O est le milieu du segment [AA'].","O est le milieu de [AA'] et AO = 4 cm. AA' = ?",["8 cm","4 cm","2 cm"],"O est au milieu : 4 + 4 = 8."],
     ["La symétrie centrale fait faire un demi-tour à la figure. Elle conserve les longueurs, les angles et les aires.","Le symétrique d'un segment de 6 cm mesure…",["6 cm","12 cm","3 cm"],"Les longueurs sont conservées."],
@@ -313,7 +320,7 @@ const THEMES = [
     ()=>{const x=nz(-9,9),y=nz(-9,9);return num(`Le point A a pour coordonnées (${fr(x)} ; ${fr(y)}). Quelle est l'ordonnée de son symétrique par rapport à l'origine ?`,-y,'On prend les opposés des coordonnées.');},
     ()=>qcm('Un quadrilatère dont les diagonales se coupent en leur milieu est…',['un parallélogramme','forcément un carré','un trapèze'])
   ]},
-{ id:'litteral', titre:'Calcul littéral', mois:5,
+{ id:'litteral', rg:[[6,7],[0,3,4],[1,2,5]], titre:'Calcul littéral', mois:5,
   rappel:[
     ["Une expression littérale contient des lettres qui remplacent des nombres. On peut enlever le signe × devant une lettre : 3 × x s'écrit 3x.","Comment écrire 5 × a ?",["5a","a + 5","55a"],"On enlève juste le ×."],
     ["Pour calculer une expression, on remplace la lettre par sa valeur : pour x = 2, 3x + 1 = 3 × 2 + 1 = 7.","4x + 1 pour x = 3 ?",["13","44","8"],"4 × 3 + 1 = 13."],
@@ -329,7 +336,7 @@ const THEMES = [
     ()=>qcm('Quelle écriture est égale à 3 × a ?',['3a','a3 + 3','3 + a']),
     ()=>qcm("Le périmètre d'un carré de côté c s'écrit…",['4c','c + 4','2c'])
   ]},
-{ id:'proportionnalite', titre:'Proportionnalité et pourcentages', mois:6,
+{ id:'proportionnalite', rg:[[3,5],[0,2],[1,6]], titre:'Proportionnalité et pourcentages', mois:6,
   rappel:[
     ["Deux grandeurs sont proportionnelles si on passe de l'une à l'autre en multipliant toujours par le même nombre.","1 kg coûte 3 €. Combien coûtent 4 kg ?",["12 €","7 €","4 €"],"3 × 4 = 12."],
     ["Passage par l'unité : 5 stylos coûtent 10 €, donc 1 stylo coûte 2 €, donc 3 stylos coûtent 6 €.","4 places coûtent 20 €. Et 7 places ?",["35 €","28 €","23 €"],"1 place = 5 €, donc 7 × 5 = 35."],
@@ -344,7 +351,7 @@ const THEMES = [
     ()=>{const k=rnd(2,6),xs=shuffle([2,3,4,5,6,7,8]).slice(0,3).sort((a,b)=>a-b);const ys=xs.map(x=>x*k);const ok=Math.random()<.5;if(!ok)ys[2]+=pick([-1,1,2]);return qcm(`Ce tableau est-il un tableau de proportionnalité ?<table class="t"><tr>${xs.map(x=>`<td>${x}</td>`).join('')}</tr><tr>${ys.map(y=>`<td>${y}</td>`).join('')}</tr></table>`,ok?['Oui','Non']:['Non','Oui'],`Vérifie si on multiplie toujours par ${k}.`);},
     ()=>{const prix=10*rnd(2,15),pc=pick([10,20,50]);return num(`Un jean à ${prix} € est soldé à −${pc} %. Quel est son nouveau prix (en €) ?`,prix*(100-pc)/100,`La réduction vaut ${prix*pc/100} €.`);}
   ]},
-{ id:'aires', titre:'Aires et périmètres', mois:7,
+{ id:'aires', rg:[[0,1],[2,3],[4,5]], titre:'Aires et périmètres', mois:7,
   rappel:[
     ["Rectangle : aire = longueur × largeur ; périmètre = 2 × (longueur + largeur).","Aire d'un rectangle de 5 cm sur 3 cm ?",["15 cm²","16 cm²","8 cm²"],"5 × 3 = 15, en cm²."],
     ["Triangle : aire = base × hauteur ÷ 2. Parallélogramme : aire = base × hauteur.","Triangle de base 6 cm et de hauteur 4 cm ?",["12 cm²","24 cm²","10 cm²"],"6 × 4 = 24, puis ÷ 2 = 12."],
@@ -359,7 +366,7 @@ const THEMES = [
     ()=>{const r=pick([1,2,3,4,6,10]);return num(`Aire d'un disque de rayon ${r} cm, arrondie à l'unité (π ≈ 3,14) ?`,Math.round(3.14*r*r),`3,14 × ${r} × ${r} = ${fr(3.14*r*r)}`);},
     ()=>pick([num('1 m² = … dm²',100,'1 m = 10 dm, donc 1 m² = 10 × 10 dm².'),num('3 dm² = … cm²',300,'1 dm² = 100 cm².'),num('500 cm² = … dm²',5,'100 cm² = 1 dm².')])
   ]},
-{ id:'volumes', titre:'Volumes', mois:8,
+{ id:'volumes', rg:[[0,1],[2,3],[4]], titre:'Volumes', mois:8,
   rappel:[
     ["Pavé droit : volume = longueur × largeur × hauteur. Cube : côté × côté × côté.","Cube de 3 cm de côté ?",["27 cm³","9 cm³","18 cm³"],"3 × 3 × 3 = 27."],
     ["Prisme droit et cylindre : volume = aire de la base × hauteur.","Base de 10 cm², hauteur de 5 cm. Volume ?",["50 cm³","15 cm³","25 cm³"],"10 × 5 = 50."],
@@ -372,7 +379,7 @@ const THEMES = [
     ()=>{const r=rnd(1,4),h=rnd(2,10);return num(`Volume d'un cylindre de rayon ${r} cm et de hauteur ${h} cm, arrondi à l'unité (π ≈ 3,14) ?`,Math.round(3.14*r*r*h),`3,14 × ${r} × ${r} × ${h} = ${fr(3.14*r*r*h)}`);},
     ()=>{const k=rnd(2,9);return pick([num('1 L = … cm³',1000),num(`${k} dm³ = … L`,k,'1 dm³ = 1 L.'),num(`${k*500} cm³ = … L`,k/2,'1 000 cm³ = 1 L.'),num(`${k} L = … mL`,k*1000,'1 L = 1 000 mL.')]);}
   ]},
-{ id:'stats', titre:'Statistiques et probabilités', mois:9,
+{ id:'stats', rg:[[0,6],[1,2],[3,4,5]], titre:'Statistiques et probabilités', mois:9,
   rappel:[
     ["Moyenne : on additionne toutes les valeurs, puis on divise par le nombre de valeurs.","Moyenne de 10, 12 et 14 ?",["12","36","13"],"10 + 12 + 14 = 36, et 36 ÷ 3 = 12."],
     ["Fréquence = effectif ÷ effectif total. On peut l'écrire en pourcentage : 5 sur 20 = 25 %.","10 élèves sur 40. Fréquence ?",["25 %","10 %","40 %"],"10 ÷ 40 = 0,25 = 25 %."],
@@ -563,6 +570,7 @@ function countStatus(){
 /* ---------- Accueil ---------- */
 function renderHome(){
   UI={screen:'home'};
+  if(S.cur&&S.cur.date!==todayKey()){S.cur=null;saveState();}
   const w=week(),d=day(),rem=remaining(),sug=suggestTheme(),cs=countStatus();
   const pend=Object.entries(S.weeks).filter(([,x])=>x.status==='a_verser').sort();
   let h=header();
@@ -577,7 +585,10 @@ function renderHome(){
     <div class="muted">jusqu'à ${CONFIG.plafondSemaine} € · repart à zéro lundi</div></div></div>
     <p class="muted" style="margin-top:12px">Exercices notés aujourd'hui : ${Math.min(d.attempts,CONFIG.exosNotesParJour)} sur ${CONFIG.exosNotesParJour}. Jours travaillés cette semaine : ${w.days.length} sur ${CONFIG.joursNotesParSemaine}.</p>
     ${!cs.ok&&rem>0?`<p class="muted">${cs.why} Tu peux encore t'entraîner, sans gagner de pièces.</p>`:''}</div>`;
-  if(rem>0){
+  if(rem>0&&S.cur){
+    h+=`<button class="btn" onclick="runExercise()">Reprendre mon exercice (question ${S.cur.marks.length+1} sur ${CONFIG.questionsParExercice})</button>
+    <p class="muted centre">Tu avais commencé : on reprend où tu t'étais arrêté.</p>`;
+  }else if(rem>0){
     h+=`<button class="btn" onclick="openTheme('${sug.id}')">Commencer ma séance</button>
     <p class="muted centre">Conseillé aujourd'hui : ${esc(sug.titre)}</p>`;
   }else{
@@ -606,22 +617,46 @@ async function confirmRecu(k){
 /* ---------- Rappel de cours ---------- */
 function openTheme(id){
   if(remaining()<=0)return renderHome();
+  if(S.cur&&S.cur.date===todayKey())return runExercise();
   UI={screen:'lesson',theme:THEMES.find(t=>t.id===id),step:0};
   prepStep();renderLesson();
 }
-function prepStep(){const c=UI.theme.rappel[UI.step];UI.lc=shuffle(c[2]);UI.good=c[2][0];UI.tried=[];UI.ok=false;}
+function rappelQ(t,idxs){
+  const q=t.gens[pick(idxs)]();
+  const R=x=>Math.round(x*1000)/1000;
+  let choices;
+  if(q.type==='qcm')choices=[q.answer,...q.choices.filter(c=>c!==q.answer)].slice(0,4);
+  else if(q.type==='num'){
+    const a=q.answer,cands=Number.isInteger(a)?[a+1,a-1,a+2,a-2,a+10,a-10]:[R(a+0.1),R(a-0.1),R(a*10),R(a/10),R(a+1)];
+    const wrong=shuffle(cands.filter(x=>Math.abs(x-a)>1e-9&&(x>=0||a<0))).slice(0,2);
+    choices=[fr(a),...wrong.map(fr)];
+  }else if(q.type==='frac'){
+    const g=gcd(q.n,q.d),n=q.n/g,d=q.d/g;
+    const wrong=shuffle([[n+1,d],[n,d+1],[n,2*d],[n+d,d+d]]).filter(([x,y])=>Math.abs(x/y-n/d)>1e-9).slice(0,2);
+    choices=[`${n}/${d}`,...wrong.map(([x,y])=>`${x}/${y}`)];
+  }else return null;
+  if(new Set(choices).size!==choices.length)return null;
+  return {q:q.q,choices,aide:q.explain||`La bonne réponse est ${choices[0]}.`};
+}
+function prepStep(){
+  const t=UI.theme,c=t.rappel[UI.step];
+  let r=null;
+  if(st(t.id).done>0&&t.rg){for(let i=0;i<5&&!r;i++)r=rappelQ(t,t.rg[UI.step]);}
+  if(!r)r={q:c[1],choices:c[2],aide:c[3]};
+  UI.rq=r;UI.lc=shuffle(r.choices);UI.good=r.choices[0];UI.tried=[];UI.ok=false;
+}
 function renderLesson(){
   const t=UI.theme,c=t.rappel[UI.step],n=t.rappel.length;
   let h=header()+`<div class="etapes">${t.rappel.map((_,i)=>`<span class="${i<UI.step||(i===UI.step&&UI.ok)?'ok':''}"></span>`).join('')}</div>
   <div class="card"><div class="muted">Rappel · ${esc(t.titre)}</div><p class="lecon">${c[0]}</p></div>
-  <div class="card"><p class="enonce">${c[1]}</p><div class="choix">`;
+  <div class="card"><p class="enonce">${UI.rq.q}</p><div class="choix">`;
   for(const ch of UI.lc){
     const cls=UI.ok&&ch===UI.good?'juste':UI.tried.includes(ch)?'faux':'';
     h+=`<button class="btn ${cls}" ${UI.ok||UI.tried.includes(ch)?'disabled':''} onclick="lessonAnswer(this.dataset.v)" data-v="${esc(ch)}">${esc(ch)}</button>`;
   }
   h+=`</div>`;
-  if(UI.tried.length&&!UI.ok)h+=`<div class="retour f"><span class="hand">Pas tout à fait…</span><p>${c[3]}</p></div>`;
-  if(UI.ok)h+=`<div class="retour j"><span class="hand">Exact !</span><p>${c[3]}</p></div>
+  if(UI.tried.length&&!UI.ok)h+=`<div class="retour f"><span class="hand">Pas tout à fait…</span><p>${UI.rq.aide}</p></div>`;
+  if(UI.ok)h+=`<div class="retour j"><span class="hand">Exact !</span><p>${UI.rq.aide}</p></div>
     <button class="btn" id="suite" onclick="lessonNext()">${UI.step<n-1?'Rappel suivant':"C'est parti pour l'exercice"}</button>`;
   h+=`</div><button class="lien" onclick="renderHome()">Retour à l'accueil</button>`;
   app.innerHTML=h;
@@ -636,12 +671,18 @@ function lessonNext(){
 /* ---------- Exercice ---------- */
 function startExercise(id){
   if(remaining()<=0)return renderTimeUp();
-  const theme=THEMES.find(t=>t.id===id);
   const cs=countStatus();
-  if(cs.ok){ // l'essai est compté dès le départ (pas de triche en rechargeant la page)
-    day().attempts++;const w=week();if(!w.days.includes(todayKey()))w.days.push(todayKey());saveState();
+  if(cs.ok){ // le créneau est consommé au départ, mais l'exercice est sauvegardé et reprendra là où il s'est arrêté
+    day().attempts++;const w=week();if(!w.days.includes(todayKey()))w.days.push(todayKey());
   }
-  UI={screen:'exercise',theme,ex:{qs:makeExercise(theme),i:0,marks:[],counted:cs.ok,why:cs.why||''},input:'',answered:false};
+  const seed=Math.floor(Math.random()*2147483646)+1;
+  S.cur={t:id,seed,marks:[],counted:cs.ok,why:cs.why||'',date:todayKey()};
+  saveState();runExercise();
+}
+function runExercise(){
+  const c=S.cur,theme=THEMES.find(t=>t.id===c.t);
+  const qs=withSeed(c.seed,()=>makeExercise(theme));
+  UI={screen:'exercise',theme,ex:{qs,i:c.marks.length,marks:c.marks.slice(),counted:c.counted,why:c.why},input:'',answered:false};
   renderQuestion();
 }
 function renderQuestion(){
@@ -680,6 +721,7 @@ function submitAnswer(v){
   if(UI.answered)return;
   const q=UI.ex.qs[UI.ex.i];
   UI.given=v;UI.answered=true;UI.ex.marks[UI.ex.i]=isCorrect(q,v);
+  if(S.cur){S.cur.marks=UI.ex.marks.slice();saveState();}
   renderQuestion();
 }
 function nextQuestion(){
@@ -691,6 +733,7 @@ function finishExercise(){
   const ex=UI.ex,t=UI.theme,n=ex.qs.length;
   const good=ex.marks.filter(Boolean).length;
   const note=Math.round(good*10/n);
+  S.cur=null;
   const w=week();let gain=0;
   if(ex.counted&&note>=7){gain=Math.min(CONFIG.bareme[note]||0,Math.max(0,CONFIG.plafondSemaine-w.earned));gain=Math.round(gain*100)/100;w.earned=Math.round((w.earned+gain)*100)/100;}
   w.results.push({date:todayKey(),theme:t.id,note,gain,counted:ex.counted});
@@ -789,7 +832,7 @@ function renderParent(info=''){
     ${k<weekKey()&&mailOn()?`<button class="lien" onclick="resendMail('${k}')">Renvoyer le mail</button>`:''}</div></div>`;
   }
   h+=`</div><div class="card"><h3>Dernières notes</h3>`;
-  const last=Object.values(S.weeks).flatMap(x=>x.results).sort((a,b)=>a.date<b.date?1:-1).slice(0,12);
+  const last=Object.entries(S.weeks).sort().flatMap(([,x])=>x.results).map((r,n)=>({...r,n})).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:b.n-a.n).slice(0,12);
   h+=last.length?last.map(r=>`<div class="ligne"><span>${r.date.split('-').reverse().join('/')} · ${esc((THEMES.find(t=>t.id===r.theme)||{}).titre||r.theme)}</span><span><b>${r.note}/10</b> ${r.counted?`· ${euro(r.gain)}`:'· entraînement'}</span></div>`).join(''):'<p class="muted">Aucun exercice pour le moment.</p>';
   h+=`</div><div class="card"><h3>Réglages</h3>
   <label class="bascule"><input type="checkbox" ${S.unlockAll?'checked':''} onchange="S.unlockAll=this.checked;saveState()"> Débloquer tous les thèmes dès maintenant</label>
