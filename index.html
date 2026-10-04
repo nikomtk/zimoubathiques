@@ -101,7 +101,7 @@ p{margin:.4em 0}
 .progres span.j{background:var(--encre)}
 .progres span.f{background:var(--rouge)}
 .progres span.c{background:var(--fermoir)}
-.enonce{font-size:1.3rem;font-weight:600;line-height:1.5}
+.enonce{font-size:1.3rem;font-weight:600;line-height:1.5;margin:.4em 0}
 .saisie{
   margin-top:16px;min-height:66px;border:3px solid var(--trait);border-radius:12px;background:#fff;
   font-size:2.3rem;color:var(--encre);padding:4px 14px;display:flex;align-items:center;
@@ -395,6 +395,204 @@ const THEMES = [
     ()=>{const m=rnd(6,15),a=rnd(1,4);return num(`Quelle est la moyenne de ${m-a}, ${m} et ${m+a} ?`,m,`Somme : ${3*m}, puis ÷ 3.`);}
   ]}
 ];
+/* =====================================================================
+   COMPLÉMENTS AU PROGRAMME (d'après l'annexe 2, cycle 4, classe de 5e)
+   ===================================================================== */
+const svgPlan=(x,y)=>{
+  const u=20,o=110;let g='',t='';
+  for(let i=-5;i<=5;i++){
+    g+=`<line x1="${o+i*u}" y1="10" x2="${o+i*u}" y2="210" stroke="#DDE7F3" stroke-width="1"/><line x1="10" y1="${o+i*u}" x2="210" y2="${o+i*u}" stroke="#DDE7F3" stroke-width="1"/>`;
+    if(i!==0){const l=i<0?'−'+Math.abs(i):i;t+=`<text x="${o+i*u}" y="${o+13}" font-size="9" text-anchor="middle" fill="#6B5E54">${l}</text><text x="${o-5}" y="${o-i*u+3}" font-size="9" text-anchor="end" fill="#6B5E54">${l}</text>`;}
+  }
+  return `<svg viewBox="0 0 220 220" width="260" style="max-width:100%;display:block;margin:10px auto 0" role="img" aria-label="Repère avec un point A">${g}<line x1="10" y1="${o}" x2="210" y2="${o}" stroke="#2A1F17" stroke-width="2"/><line x1="${o}" y1="10" x2="${o}" y2="210" stroke="#2A1F17" stroke-width="2"/>${t}<circle cx="${o+x*u}" cy="${o-y*u}" r="5" fill="#D4262C" stroke="#2A1F17" stroke-width="1.5"/><text x="${x>=3?o+x*u-16:o+x*u+8}" y="${y>=4?o-y*u+18:o-y*u-7}" font-size="13" font-weight="700" fill="#D4262C">A</text></svg>`;
+};
+const svgDroite=(v,lo)=>{
+  const hi=lo+5,x0=15,w=270,X=a=>x0+(a-lo)/(hi-lo)*w;let s='';
+  for(let k=0;k<=10;k++){
+    const a=lo+k/2,major=Number.isInteger(a);
+    s+=`<line x1="${X(a)}" y1="${major?24:28}" x2="${X(a)}" y2="${major?46:42}" stroke="#2A1F17" stroke-width="${major?2:1.2}"/>`;
+    if(major)s+=`<text x="${X(a)}" y="62" font-size="11" text-anchor="middle" fill="#6B5E54">${a<0?'−'+Math.abs(a):a}</text>`;
+  }
+  return `<svg viewBox="0 0 300 72" width="300" style="max-width:100%;display:block;margin:10px auto 0" role="img" aria-label="Droite graduée avec un point A"><line x1="8" y1="35" x2="292" y2="35" stroke="#2A1F17" stroke-width="2"/>${s}<circle cx="${X(v)}" cy="35" r="5" fill="#D4262C" stroke="#2A1F17" stroke-width="1.5"/><text x="${X(v)}" y="18" font-size="13" font-weight="700" text-anchor="middle" fill="#D4262C">A</text></svg>`;
+};
+const svgBars=(labels,vals)=>{
+  const n=vals.length,bw=40,gap=(240-n*bw)/(n+1);let s='';
+  for(let i=0;i<=14;i+=2){const y=140-i*10;s+=`<line x1="30" y1="${y}" x2="270" y2="${y}" stroke="#DDE7F3"/><text x="26" y="${y+3}" font-size="9" text-anchor="end" fill="#6B5E54">${i}</text>`;}
+  vals.forEach((v,i)=>{const x=30+gap+i*(bw+gap);s+=`<rect x="${x}" y="${140-v*10}" width="${bw}" height="${v*10}" fill="#FFB84D" stroke="#2A1F17" stroke-width="2"/><text x="${x+bw/2}" y="155" font-size="11" text-anchor="middle" fill="#2A1F17">${labels[i]}</text>`;});
+  return `<svg viewBox="0 -10 280 175" width="280" style="max-width:100%;display:block;margin:10px auto 0" role="img" aria-label="Diagramme en barres">${s}<line x1="30" y1="10" x2="30" y2="140" stroke="#2A1F17" stroke-width="2"/><line x1="30" y1="140" x2="270" y2="140" stroke="#2A1F17" stroke-width="2"/></svg>`;
+};
+const FP=[[0.5,'1/2','50 %'],[0.25,'1/4','25 %'],[0.75,'3/4','75 %'],[0.1,'1/10','10 %'],[0.2,'1/5','20 %'],[1.5,'3/2','150 %']];
+const T=id=>THEMES.find(t=>t.id===id);
+const addTo=(id,o)=>{const t=T(id);if(o.titre)t.titre=o.titre;(o.rappel||[]).forEach(r=>t.rappel.push(r));(o.gens||[]).forEach(g=>t.gens.push(g));if(o.rg)t.rg=o.rg;};
+const insertAfter=(afterId,theme)=>THEMES.splice(THEMES.findIndex(t=>t.id===afterId)+1,0,theme);
+
+/* ---------- Thèmes existants enrichis ---------- */
+addTo('decimaux',{
+  rappel:[["Pour diviser par un décimal, on multiplie le dividende et le diviseur par 10 (ou 100) pour rendre le diviseur entier : 6 ÷ 0,5 = 60 ÷ 5 = 12.","3 ÷ 0,5 = ?",["6","1,5","0,6"],"3 ÷ 0,5 = 30 ÷ 5 = 6."]],
+  gens:[()=>{const d=pick([0.5,0.2,0.4,0.25,1.5,2.5]),q=rnd(2,20),a=Math.round(q*d*100)/100;return num(`${fr(a)} ÷ ${fr(d)} = ?`,q,`On multiplie les deux nombres par ${d===0.25?100:10} : le diviseur devient entier.`);}],
+  rg:[[3],[1,2],[4],[6]]
+});
+addTo('relatifs',{
+  gens:[
+    ()=>{const a=nz(-15,15);return num(`Quelle est la valeur absolue de ${fr(a)} ?`,Math.abs(a),"La valeur absolue, c'est la distance à zéro : on enlève le signe.");},
+    ()=>{const a=nz(-9,9),b=nz(-9,9),c=nz(-9,9);return num(`${relS(a)} + ${relS(b)} + ${relS(c)} = ?`,a+b+c,'Additionne deux nombres, puis le troisième.');},
+    ()=>{const a=nz(-10,10),b=rnd(2,9),c=rnd(2,9);return num(`${fr(a)} − ${b} + ${c} = ?`,a-b+c,'On calcule de gauche à droite.');},
+    ()=>{let v,asc,desc,abs;for(let i=0;i<80;i++){const s=new Set();while(s.size<3)s.add(rnd(-9,9));v=[...s];const f=a=>a.map(fr).join(' < ');asc=f([...v].sort((x,y)=>x-y));desc=f([...v].sort((x,y)=>y-x));abs=f([...v].sort((x,y)=>Math.abs(x)-Math.abs(y)));if(new Set([asc,desc,abs]).size===3)break;}
+      return qcm("Quel rangement est dans l'ordre croissant ?",[...new Set([asc,desc,abs])],'Le plus petit est le plus à gauche sur la droite graduée.');}
+  ],
+  rg:[[2,4,6,9],[0,3,7],[1,5,8]]
+});
+addTo('angles',{
+  rappel:[["Droites remarquables : la hauteur est perpendiculaire à un côté et passe par le sommet opposé ; la médiane relie un sommet au milieu du côté opposé ; la médiatrice passe par le milieu d'un côté en lui étant perpendiculaire.","Une médiane partage un triangle en deux triangles…",["de même aire","de même périmètre","de même forme"],"Les deux triangles ont des bases égales et la même hauteur, donc la même aire."]],
+  gens:[
+    ()=>qcm("Une médiane d'un triangle le partage en deux triangles…",['de même aire','de même périmètre','de même forme'],'Les deux triangles ont des bases égales et la même hauteur.'),
+    ()=>qcm("Les trois hauteurs d'un triangle…",['se coupent en un seul point','sont parallèles','sont toutes égales'],'On dit qu\u2019elles sont concourantes.'),
+    ()=>qcm("Le cercle circonscrit à un triangle passe par…",['ses trois sommets','les milieux de ses côtés','ses trois hauteurs'],'Son centre est le point de rencontre des médiatrices.'),
+    ()=>{const A=2*rnd(5,40);return num(`Un triangle ABC a une aire de ${A} cm². M est le milieu de [BC]. Quelle est l'aire du triangle ABM (en cm²) ?`,A/2,'La médiane [AM] partage le triangle en deux triangles de même aire.');}
+  ],
+  rg:[[0],[1,2,6],[3],[7,8,9,10]]
+});
+addTo('fractions',{
+  rappel:[
+    ["Pour comparer deux fractions, on les écrit avec le même dénominateur. Exemple : 3/4 = 6/8, donc 3/4 est plus grand que 5/8. Si les dénominateurs sont égaux, la plus grande est celle qui a le plus grand numérateur.","Laquelle est la plus grande ?",["3/4","5/8"],"3/4 = 6/8, et 6/8 est plus grand que 5/8."],
+    ["Un même nombre s'écrit de plusieurs façons : 0,5 = 1/2 = 50 %. Une fraction plus grande que 1 se décompose : 7/4 = 1 + 3/4.","0,25 = ?",["1/4","1/2","2/5"],"0,25, c'est 25 centièmes : 1/4 = 25 %."]
+  ],
+  gens:[
+    ()=>{let a,b;const d=rnd(3,12);do{a=rnd(1,d-1);b=rnd(1,d-1);}while(a===b);return qcm(`Quelle fraction est la plus grande : ${F(a,d)} ou ${F(b,d)} ?`,[`${Math.max(a,b)}/${d}`,`${Math.min(a,b)}/${d}`],'Même dénominateur : la plus grande a le plus grand numérateur.');},
+    ()=>{const d=rnd(2,6);let a,b;do{a=rnd(1,d);b=rnd(1,2*d-1);}while(2*a===b);const x=a/d,y=b/(2*d);return qcm(`Quelle fraction est la plus grande : ${F(a,d)} ou ${F(b,2*d)} ?`,x>y?[`${a}/${d}`,`${b}/${2*d}`]:[`${b}/${2*d}`,`${a}/${d}`],`On met au même dénominateur : ${F(a,d)} = ${F(2*a,2*d)}.`);},
+    ()=>{const d=rnd(2,9),q=rnd(1,5),r=rnd(1,d-1);return num(`${F(q*d+r,d)} = ? + ${F(r,d)}   Quel est le nombre entier manquant ?`,q,`${q*d+r} = ${q} × ${d} + ${r}`);},
+    ()=>{const i=rnd(0,FP.length-1);const w=shuffle(FP.filter((_,j)=>j!==i)).slice(0,2).map(p=>p[1]);return qcm(`Quelle fraction est égale à ${fr(FP[i][0])} ?`,[FP[i][1],...w],'Pense aux centièmes : 0,25 = 25/100 = 1/4.');},
+    ()=>{const i=rnd(0,FP.length-1);const w=shuffle(FP.filter((_,j)=>j!==i)).slice(0,2).map(p=>p[2]);return qcm(`${fr(FP[i][0])} s'écrit en pourcentage…`,[FP[i][2],...w],'Un pourcentage, c\u2019est des centièmes : 0,25 = 25 %.');}
+  ],
+  rg:[[0,1],[2,3,6],[4],[7,8],[9,10,11]]
+});
+addTo('divisibilite',{
+  gens:[()=>{const n=pick([6,8,9,10,12,15,16,18,20]);const ds=Array.from({length:n},(_,i)=>i+1).filter(i=>n%i===0);return num(`Combien ${n} a-t-il de diviseurs ?`,ds.length,`Les diviseurs de ${n} : ${ds.join(', ')}.`);}]
+});
+addTo('symetrie',{
+  titre:'Symétries et parallélogrammes',
+  gens:[
+    ()=>{const L=[['un carré','4'],["un rectangle (qui n'est pas un carré)",'2'],['un triangle équilatéral','3'],["un losange (qui n'est pas un carré)",'2'],['un cercle','une infinité']];const [f,a]=pick(L);const o=['1','2','3','4'].filter(x=>x!==a);return qcm(`Combien d'axes de symétrie a ${f} ?`,[a,...shuffle(o).slice(0,a==='une infinité'?3:3)]);},
+    ()=>{const L=[['a un angle droit','un rectangle'],['a deux côtés consécutifs égaux','un losange'],['a ses diagonales perpendiculaires','un losange'],['a ses diagonales de même longueur','un rectangle']];const [c,a]=pick(L);const w=['un rectangle','un losange','un trapèze'].filter(x=>x!==a);return qcm(`Un parallélogramme qui ${c} est…`,[a,...w],'Propriété caractéristique des parallélogrammes particuliers.');},
+    ()=>qcm("Si A' est le symétrique de A par rapport à la droite (d), alors (d) est… du segment [AA']",['la médiatrice','la médiane','la hauteur'],"(d) est perpendiculaire à [AA'] et passe par son milieu.")
+  ],
+  rg:[[0,6],[5,8,10],[1,2,3,4,7,9]]
+});
+addTo('litteral',{
+  gens:[
+    ()=>{const a=rnd(2,9),b=rnd(2,9);return Math.random()<.5?qcm(`${a}x + ${b} est…`,['une somme','un produit'],`C'est une addition de deux termes : ${a}x et ${b}.`):qcm(`${a}(x + ${b}) est…`,['un produit','une somme'],`C'est ${a} multiplié par (x + ${b}).`);},
+    ()=>{const L=[['le double de n','2n',['n + 2','n²']],['le triple de n','3n',['n + 3','n³']],['le successeur de n','n + 1',['n − 1','2n']],['le prédécesseur de n','n − 1',['n + 1','n²']],['le carré de n','n²',['2n','n + 2']]];const [t,a,w]=pick(L);return qcm(`Comment s'écrit ${t} ?`,[a,...w]);},
+    ()=>{const a=rnd(2,9),b=rnd(1,15),x=rnd(2,12);return num(`Programme de calcul : on choisit un nombre, on le multiplie par ${a}, puis on ajoute ${b}. Quel résultat obtient-on en partant de ${x} ?`,a*x+b,`${a} × ${x} + ${b}`);}
+  ],
+  rg:[[6,7,8,9],[0,3,4,10],[1,2,5]]
+});
+addTo('proportionnalite',{
+  gens:[()=>{const N=pick([10,20,25,50]),a=rnd(1,N-1);return num(`Dans une élection, ${a} personnes sur ${N} ont voté pour Salma. Quel est son pourcentage de voix ?`,a*100/N,`${a} ÷ ${N} × 100`);}],
+  rg:[[3,5],[0,2],[1,6,7]]
+});
+{
+  const t=T('stats');
+  t.rappel.splice(2,0,["Dans un diagramme en barres, la hauteur de chaque barre donne l'effectif. On lit la valeur sur l'axe vertical. La barre la plus haute correspond à l'effectif le plus grand.","La barre la plus haute indique…",["l'effectif le plus grand","l'effectif le plus petit"],"Plus la barre est haute, plus l'effectif est grand."]);
+  t.gens.push(
+    ()=>{const tot=pick([10,20,25,50]);const names=pick([['Bleu','Rouge','Vert'],['Foot','Basket','Tennis'],['Pizza','Pâtes','Burger']]);const a=rnd(1,tot-2),b=rnd(1,tot-a-1),c=tot-a-b;const cnt=[a,b,c],k=rnd(0,2);return num(`Sondage auprès de ${tot} élèves :<table class="t"><tr>${names.map(n=>`<td>${n}</td>`).join('')}</tr><tr>${cnt.map(x=>`<td>${x}</td>`).join('')}</tr></table>Quelle est la fréquence de « ${names[k]} », en % ?`,cnt[k]*100/tot,`${cnt[k]} ÷ ${tot} × 100`);},
+    ()=>{const L=[["Quelle est la probabilité d'un événement impossible ?",'0',['1','0,5']],["Quelle est la probabilité d'un événement certain ?",'1',['0','0,5']],["On lance une pièce équilibrée. Quelle est la probabilité d'obtenir pile ?",'1/2',['1','1/4']],["« Une chance sur quatre » correspond à une probabilité de…",'25 %',['4 %','14 %']]];const [q,a,w]=pick(L);return qcm(q,[a,...w]);},
+    ()=>{const k=pick([2,3,4,5,6,8,10]);return frac(`« Une chance sur ${k} ». Quelle est la probabilité ?  (écris par exemple 1/4)`,1,k);},
+    ()=>{const labels=['Pomme','Banane','Fraise','Kiwi'];const vals=labels.map(()=>rnd(2,13));const k=rnd(0,3);return num(`Fruit préféré des élèves d'une classe.${svgBars(labels,vals)}Combien d'élèves ont choisi « ${labels[k]} » ?`,vals[k],"On lit la hauteur de la barre sur l'axe vertical.");},
+    ()=>{const labels=['Pomme','Banane','Fraise','Kiwi'];const pool=shuffle([2,3,4,5,6,7,8,9,10,11,12,13]).slice(0,4);const mx=Math.max(...pool);return qcm(`Fruit préféré des élèves d'une classe.${svgBars(labels,pool)}Quel fruit est le plus choisi ?`,[labels[pool.indexOf(mx)],...labels.filter((_,i)=>pool[i]!==mx)],"C'est la barre la plus haute.");}
+  );
+  t.rg=[[0,6],[1,2,7],[10,11],[3,4,5,8,9]];
+}
+
+/* ---------- Nouveaux thèmes ---------- */
+insertAfter('fractions',{ id:'puissances', titre:'Carrés et cubes (puissances)', mois:2,
+  rg:[[0,2,5],[1,6],[3,4,7,9]],
+  rappel:[
+    ["Le carré d'un nombre, c'est ce nombre multiplié par lui-même : 5² = 5 × 5 = 25. Attention : 5² n'est pas 5 × 2 !","7² = ?",["49","14","72"],"7 × 7 = 49."],
+    ["Le cube d'un nombre : 4³ = 4 × 4 × 4 = 64. À retenir : 10³ = 1 000.","2³ = ?",["8","6","9"],"2 × 2 × 2 = 8."],
+    ["Dans un calcul, la puissance passe avant les multiplications et les additions : 3 + 2² = 3 + 4 = 7.","5 + 3² = ?",["14","64","11"],"3² = 9, puis 5 + 9 = 14."]
+  ],
+  gens:[
+    ()=>{const n=rnd(2,12);return num(`${n}² = ?`,n*n,`${n}² = ${n} × ${n}`);},
+    ()=>{const n=pick([2,3,4,5,10]);return num(`${n}³ = ?`,n*n*n,`${n}³ = ${n} × ${n} × ${n}`);},
+    ()=>{const n=rnd(2,9);return qcm(`Comment écrit-on ${n} × ${n} ?`,[`${n}²`,`2 × ${n}`,`${n}³`],`${n} × ${n} se note ${n}² (« ${n} au carré »).`);},
+    ()=>{const a=rnd(1,20),b=rnd(2,9);return num(`${a} + ${b}² = ?`,a+b*b,`On calcule d'abord ${b}² = ${b*b}.`);},
+    ()=>{const a=rnd(2,5),b=rnd(2,6);return num(`${a} × ${b}² = ?`,a*b*b,`${b}² = ${b*b}, puis ${a} × ${b*b}.`);},
+    ()=>{const n=rnd(3,12);return num(`Quel nombre multiplié par lui-même donne ${n*n} ?`,n,`${n} × ${n} = ${n*n}, donc ${n*n} = ${n}².`);},
+    ()=>qcm("Que vaut 10³ ?",['1 000','30','100'],'10 × 10 × 10 = 1 000.'),
+    ()=>{const a=rnd(2,6),b=pick([2,3]);return num(`${a}² + ${b}³ = ?`,a*a+b*b*b,`${a}² = ${a*a} et ${b}³ = ${b*b*b}.`);},
+    ()=>{const c=rnd(2,12);return num(`Un carré a un côté de ${c} cm. Quelle est son aire (en cm²) ?`,c*c,`Aire = côté² = ${c}².`);},
+    ()=>{const x=rnd(2,9),b=rnd(1,10);return num(`Calcule x² + ${b} pour x = ${x}.`,x*x+b,`x² = ${x} × ${x} = ${x*x}.`);}
+  ]});
+insertAfter('divisibilite',{ id:'reperage', titre:'Repérage : droite graduée et plan', mois:3,
+  rg:[[0,1,4,5,7],[2,6],[3]],
+  rappel:[
+    ["Dans un repère, un point est repéré par deux nombres : son abscisse (lue sur l'axe horizontal), puis son ordonnée (lue sur l'axe vertical). On les écrit (abscisse ; ordonnée).","Point A(3 ; 5). Quelle est son abscisse ?",["3","5"],"L'abscisse est toujours le premier nombre."],
+    ["Pour lire les coordonnées d'un point : on lit d'abord sa position sur l'axe horizontal (abscisse), puis sur l'axe vertical (ordonnée). À gauche de l'origine ou en dessous, les nombres sont négatifs.","2 carreaux à droite de l'origine et 4 en haut. Coordonnées ?",["(2 ; 4)","(4 ; 2)","(−2 ; 4)"],"D'abord l'abscisse (horizontal), puis l'ordonnée (vertical)."],
+    ["Sur une droite graduée, l'abscisse d'un point est le nombre qui lui correspond. À gauche de 0, les abscisses sont négatives. Entre 2 et 3, la graduation du milieu est 2,5.","Quelle est l'abscisse du milieu entre −1 et 0 ?",["−0,5","0,5","−1,5"],"Le milieu entre −1 et 0 est −0,5."]
+  ],
+  gens:[
+    ()=>{const x=nz(-5,5),y=nz(-5,5);return num(`Quelle est l'abscisse du point A ?${svgPlan(x,y)}`,x,`L'abscisse se lit sur l'axe horizontal : ${fr(x)}.`);},
+    ()=>{const x=nz(-5,5),y=nz(-5,5);return num(`Quelle est l'ordonnée du point A ?${svgPlan(x,y)}`,y,`L'ordonnée se lit sur l'axe vertical : ${fr(y)}.`);},
+    ()=>{let x,y;do{x=nz(-5,5);y=nz(-5,5);}while(x===y);const c=(a,b)=>`(${fr(a)} ; ${fr(b)})`;return qcm(`Quelles sont les coordonnées du point A ?${svgPlan(x,y)}`,[c(x,y),c(y,x),c(-x,y)],"On lit d'abord l'abscisse (horizontal), puis l'ordonnée (vertical).");},
+    ()=>{const lo=rnd(-4,0),v=lo+rnd(1,9)/2;return num(`Quelle est l'abscisse du point A ?${svgDroite(v,lo)}`,v,`L'abscisse de A est ${fr(v)}.`);},
+    ()=>{const x=nz(-9,9),y=nz(-9,9);return num(`Le point B a pour coordonnées (${fr(x)} ; ${fr(y)}). Quelle est son abscisse ?`,x,"La première coordonnée est l'abscisse.");},
+    ()=>{const x=nz(-9,9),y=nz(-9,9);return num(`Le point B a pour coordonnées (${fr(x)} ; ${fr(y)}). Quelle est son ordonnée ?`,y,"La deuxième coordonnée est l'ordonnée.");},
+    ()=>qcm("Comment écrit-on les coordonnées d'un point ?",['(abscisse ; ordonnée)','(ordonnée ; abscisse)'],"On donne toujours l'abscisse en premier."),
+    ()=>num("Un point est sur l'axe horizontal. Quelle est son ordonnée ?",0,"Sur l'axe horizontal, on ne monte ni ne descend : l'ordonnée est 0.")
+  ]});
+insertAfter('litteral',{ id:'developper', titre:'Développer et factoriser', mois:5,
+  rg:[[0,1,2],[3,4],[5,6]],
+  rappel:[
+    ["Distributivité : k × (a + b) = k × a + k × b. Développer, c'est passer de k(a + b) à ka + kb. Exemple : 3(x + 4) = 3x + 12.","2(x + 5) = ?",["2x + 10","2x + 5","x + 10"],"On multiplie chaque terme de la parenthèse par 2."],
+    ["Factoriser, c'est faire le chemin inverse : on repère le facteur commun. Exemple : 5x + 15 = 5 × x + 5 × 3 = 5(x + 3).","4x + 12 = ?",["4(x + 3)","4(x + 12)","16x"],"12 = 4 × 3 : le facteur commun est 4."],
+    ["Cela marche aussi avec une soustraction : k(a − b) = ka − kb. Et pour le calcul mental : 7 × 98 = 7 × (100 − 2) = 700 − 14 = 686.","6 × 99 = ?",["594","600","54"],"6 × (100 − 1) = 600 − 6 = 594."]
+  ],
+  gens:[
+    ()=>{const k=rnd(2,9),b=rnd(2,9);return num(`${k}(x + ${b}) = ${k}x + …   Quel est le nombre manquant ?`,k*b,`${k} × x = ${k}x et ${k} × ${b} = ${k*b}.`);},
+    ()=>{const k=rnd(2,9),b=rnd(2,9);return qcm(`Développe ${k}(x + ${b}).`,[`${k}x + ${k*b}`,`${k}x + ${b}`,`${k+b}x`,`x + ${k*b}`],`On multiplie chaque terme de la parenthèse par ${k}.`);},
+    ()=>{const k=rnd(2,9),b=rnd(2,9);return num(`${k}(x − ${b}) = ${k}x − …   Quel est le nombre manquant ?`,k*b,`${k} × ${b} = ${k*b}.`);},
+    ()=>{const k=rnd(2,9),b=rnd(2,9);return num(`${k}x + ${k*b} = ${k}(x + …)   Quel est le nombre manquant ?`,b,`${k*b} = ${k} × ${b} : le facteur commun est ${k}.`);},
+    ()=>{let k,b;do{k=rnd(2,9);b=rnd(2,9);}while(k===b);return qcm(`Factorise ${k}x + ${k*b}.`,[`${k}(x + ${b})`,`${k}(x + ${k*b})`,`${k+b}x`,`${b}(x + ${k})`],`${k*b} = ${k} × ${b} : le facteur commun est ${k}.`);},
+    ()=>{const k=rnd(3,9),n=pick([19,21,29,31,98,99,101,102]),base=n>50?100:(n>25?30:20),e=n-base;return num(`Calcule ${k} × ${n} de tête.`,k*n,`${n} = ${base} ${e<0?'−':'+'} ${Math.abs(e)}, donc ${k} × ${n} = ${k} × ${base} ${e<0?'−':'+'} ${k} × ${Math.abs(e)}.`);},
+    ()=>{const k=rnd(2,9),b=rnd(2,9);return num(`Réduis : ${k}(x + ${b}) − ${k}x = …`,k*b,`${k}(x + ${b}) = ${k}x + ${k*b}, puis on enlève ${k}x.`);}
+  ]});
+insertAfter('developper',{ id:'equations', titre:'Équations simples', mois:6,
+  rg:[[0,6,7],[1,5,8],[3,4]],
+  rappel:[
+    ["Une équation, c'est une égalité avec une inconnue x. Résoudre x + 5 = 12, c'est chercher le nombre à mettre à la place de x. On utilise l'opération inverse : x = 12 − 5 = 7.","x + 4 = 11. Que vaut x ?",["7","15","44"],"L'opposé de + 4 est − 4 : 11 − 4 = 7."],
+    ["Pour 3x = 18 (c'est 3 × x = 18), l'opération inverse de × 3 est ÷ 3 : x = 18 ÷ 3 = 6. On peut vérifier : 3 × 6 = 18.","5x = 40. Que vaut x ?",["8","35","200"],"40 ÷ 5 = 8."],
+    ["Pour traduire un problème : « j'ajoute 7 à un nombre, je trouve 20 » donne x + 7 = 20. « Le triple d'un nombre est 18 » donne 3x = 18.","« Le double d'un nombre est 14 ». Quelle équation ?",["2x = 14","x + 2 = 14","x = 28"],"Le double, c'est 2 × x."]
+  ],
+  gens:[
+    ()=>{const b=rnd(2,15),x=rnd(1,20);return num(`x + ${b} = ${x+b}.   Que vaut x ?`,x,`${x+b} − ${b} = ${x}.`);},
+    ()=>{const a=rnd(2,9),x=rnd(2,12);return num(`${a}x = ${a*x}.   Que vaut x ?`,x,`${a*x} ÷ ${a} = ${x}.`);},
+    ()=>{const b=rnd(2,10),x=rnd(11,25);return num(`x − ${b} = ${x-b}.   Que vaut x ?`,x,`${x-b} + ${b} = ${x}.`);},
+    ()=>{const b=rnd(2,15),x=rnd(1,20);return qcm(`« J'ajoute ${b} à un nombre et je trouve ${x+b} ». Quelle équation traduit cette phrase ?`,[`x + ${b} = ${x+b}`,`x − ${b} = ${x+b}`,`${b}x = ${x+b}`],`On ajoute ${b} : x + ${b}.`);},
+    ()=>{const [nom,m]=pick([['double',2],['triple',3],['quadruple',4]]);const x=rnd(2,9);return qcm(`« Le ${nom} d'un nombre est ${m*x} ». Quelle équation traduit cette phrase ?`,[`${m}x = ${m*x}`,`x + ${m} = ${m*x}`,`x − ${m} = ${m*x}`],`Le ${nom}, c'est ${m} × x.`);},
+    ()=>{const a=rnd(2,9),p=rnd(2,15);return num(`J'achète ${a} livres identiques pour ${a*p} €. Quel est le prix d'un livre (en €) ?`,p,`${a}x = ${a*p}, donc x = ${a*p} ÷ ${a}.`);},
+    ()=>{const b=rnd(2,15),x=rnd(1,20);return num(`Un nombre augmenté de ${b} donne ${x+b}. Quel est ce nombre ?`,x,`x + ${b} = ${x+b}, donc x = ${x+b} − ${b}.`);},
+    ()=>{const b=rnd(2,9),x=rnd(1,15),ok=Math.random()<.5,c=ok?x+b:x+b+nz(-3,3);return qcm(`Le nombre ${x} est-il solution de l'équation x + ${b} = ${c} ?`,ok?['Oui','Non']:['Non','Oui'],`${x} + ${b} = ${x+b}${ok?'':`, pas ${c}`}.`);},
+    ()=>{const a=rnd(2,9),x=rnd(2,12);return num(`${a} × … = ${a*x}`,x,`${a*x} ÷ ${a} = ${x}.`);}
+  ]});
+insertAfter('aires',{ id:'fonctions', titre:'Une grandeur en fonction d\u2019une autre', mois:7,
+  rg:[[0,1,6,5],[1,2,3,7],[4,2]],
+  rappel:[
+    ["Quand une grandeur dépend d'une autre, on dit qu'elle est fonction de l'autre. Une formule permet de les relier : si une place coûte 8 €, le prix P en fonction du nombre n de places est P = 8 × n.","Une place coûte 8 €. Prix de 5 places ?",["40 €","13 €","8 €"],"8 × 5 = 40."],
+    ["Un tableau de valeurs donne plusieurs valeurs de départ et les valeurs correspondantes. Pour le compléter, on applique la formule à chaque valeur.","Avec P = 3 × n, que vaut P pour n = 4 ?",["12","7","34"],"3 × 4 = 12."],
+    ["Si on multiplie toujours par le même nombre, c'est de la proportionnalité. Ce n'est pas le cas avec un abonnement fixe : 5 € d'abonnement + 2 € par séance, ce n'est pas proportionnel.","Abonnement 5 € + 2 € par séance. Prix pour 3 séances ?",["11 €","6 €","21 €"],"5 + 2 × 3 = 11."]
+  ],
+  gens:[
+    ()=>{const p=rnd(3,12),n=rnd(2,9);return num(`Une entrée au musée coûte ${p} €. Combien paie-t-on pour ${n} entrées (en €) ?`,p*n,`${p} × ${n}`);},
+    ()=>{const a=rnd(2,9),n=rnd(2,12);return num(`Avec la formule P = ${a} × n, que vaut P pour n = ${n} ?`,a*n,`${a} × ${n}`);},
+    ()=>{const a=rnd(2,6),b=rnd(1,9),x=rnd(1,8);return num(`Avec la formule y = ${a}x + ${b}, que vaut y pour x = ${x} ?`,a*x+b,`${a} × ${x} + ${b}`);},
+    ()=>{const a=rnd(2,6),b=rnd(1,9),xs=[1,2,3,4],ys=xs.map(x=>a*x+b);return num(`Avec y = ${a}x + ${b}, complète le tableau :<table class="t"><tr><td>x</td>${xs.map(x=>`<td>${x}</td>`).join('')}</tr><tr><td>y</td>${ys.slice(0,3).map(y=>`<td>${y}</td>`).join('')}<td>?</td></tr></table>Quelle valeur à la place du ? ?`,ys[3],`${a} × 4 + ${b}`);},
+    ()=>{const ab=rnd(3,9),s=rnd(2,6);return Math.random()<.5?qcm(`Un club de sport demande ${ab} € d'abonnement plus ${s} € par séance. Le prix est-il proportionnel au nombre de séances ?`,['Non','Oui'],"Avec 0 séance, on paie déjà l'abonnement : ce n'est pas proportionnel."):qcm(`Une séance de sport coûte ${s} €, sans abonnement. Le prix est-il proportionnel au nombre de séances ?`,['Oui','Non'],`Le prix est ${s} × nombre de séances : on multiplie toujours par ${s}.`);},
+    ()=>{const v=pick([4,5,6,8,10,12,15]),t=rnd(2,6);return num(`Un cycliste roule à ${v} km/h. Quelle distance parcourt-il en ${t} h (en km) ?`,v*t);},
+    ()=>{const p=rnd(2,9);return qcm(`Un cahier coûte ${p} €. Le prix P de n cahiers s'écrit…`,[`P = ${p} × n`,`P = ${p} + n`,`P = n ÷ ${p}`],`${p} € par cahier : on multiplie ${p} par le nombre n.`);},
+    ()=>{const a=rnd(2,5),b=rnd(0,6),xs=[1,2,3,4,5],ys=xs.map(x=>a*x+b),k=rnd(0,4);return num(`Lis le tableau :<table class="t"><tr><td>x</td>${xs.map(x=>`<td>${x}</td>`).join('')}</tr><tr><td>y</td>${ys.map(y=>`<td>${y}</td>`).join('')}</tr></table>Que vaut y quand x = ${xs[k]} ?`,ys[k],'On lit la valeur de y sous le x demandé.');}
+  ]});
+
+
 const MOIS=['septembre','octobre','novembre','décembre','janvier','février','mars','avril','mai','juin'];
 
 /* =====================================================================
@@ -649,7 +847,7 @@ function renderLesson(){
   const t=UI.theme,c=t.rappel[UI.step],n=t.rappel.length;
   let h=header()+`<div class="etapes">${t.rappel.map((_,i)=>`<span class="${i<UI.step||(i===UI.step&&UI.ok)?'ok':''}"></span>`).join('')}</div>
   <div class="card"><div class="muted">Rappel · ${esc(t.titre)}</div><p class="lecon">${c[0]}</p></div>
-  <div class="card"><p class="enonce">${UI.rq.q}</p><div class="choix">`;
+  <div class="card"><div class="enonce">${UI.rq.q}</div><div class="choix">`;
   for(const ch of UI.lc){
     const cls=UI.ok&&ch===UI.good?'juste':UI.tried.includes(ch)?'faux':'';
     h+=`<button class="btn ${cls}" ${UI.ok||UI.tried.includes(ch)?'disabled':''} onclick="lessonAnswer(this.dataset.v)" data-v="${esc(ch)}">${esc(ch)}</button>`;
@@ -688,7 +886,7 @@ function runExercise(){
 function renderQuestion(){
   const ex=UI.ex,q=ex.qs[ex.i],n=ex.qs.length;
   let h=header()+`<div class="progres" style="grid-template-columns:repeat(${n},1fr)">${ex.qs.map((_,i)=>`<span class="${ex.marks[i]===true?'j':ex.marks[i]===false?'f':i===ex.i?'c':''}"></span>`).join('')}</div>
-  <div class="card"><div class="muted">${esc(UI.theme.titre)} · question ${ex.i+1} sur ${n}${ex.counted?'':' · entraînement'}</div><p class="enonce">${q.q}</p>`;
+  <div class="card"><div class="muted">${esc(UI.theme.titre)} · question ${ex.i+1} sur ${n}${ex.counted?'':' · entraînement'}</div><div class="enonce">${q.q}</div>`;
   if(q.type==='qcm'){
     h+=`<div class="choix">${q.choices.map(c=>{const cls=UI.answered?(c===q.answer?'juste':c===UI.given?'faux':''):'';return `<button class="btn ${cls}" ${UI.answered?'disabled':''} data-v="${esc(c)}" onclick="submitAnswer(this.dataset.v)">${esc(c)}</button>`;}).join('')}</div>`;
   }else{
